@@ -1,10 +1,39 @@
 # AI Usage Monitor
 
-> GNOME Shell 46 · Ubuntu 24.04 LTS · v0.4
+> GNOME Shell 46 · Ubuntu 24.04 LTS · v0.5
 
 독립적인 비공식 오픈소스 프로젝트이며 OpenAI 또는 Anthropic과 제휴하지 않습니다.
 
 Ubuntu 24.04 / GNOME Shell 46용 상단 패널 확장 프로그램입니다. Codex 5시간·주간, Claude 5시간·주간 전체 잔여율 및 초기화 카운트다운만 표시합니다.
+
+## 시스템 요구사항 및 호환성
+
+| 항목 | 요구사항 및 지원 범위 | 실제 계정 조회 확인 환경 (v0.2 개발 당시) |
+| --- | --- | --- |
+| 운영체제 | Ubuntu 24.04 LTS (지원 대상) | Ubuntu 24.04 LTS |
+| GNOME Shell | 46 | 46.0 |
+| Python | 시스템 `/usr/bin/python3` 3.10 이상 | 3.12.3 |
+| Codex CLI (선택) | App Server의 `account/rateLimits/read` 지원 필요. 정확한 최소 버전은 확인되지 않았습니다. | 0.165.0 |
+| Claude Code CLI (선택) | `get_usage` 지원 버전 2.1.270 이상 (실험적 인터페이스) | 2.1.323 |
+| 구독 및 네트워크 | 사용하려는 CLI의 구독 로그인 및 인터넷 연결 | Codex 및 Claude 구독 |
+| 기타 | Python 외부 라이브러리 및 GPU는 필요하지 않습니다. | Python 표준 라이브러리 |
+
+- Ubuntu 22.04 (GNOME 42), Ubuntu 24.10 (GNOME 47) 및 그 외 GNOME 버전은 현재 지원하지 않습니다. 다른 Linux 배포판에서 GNOME 46을 사용하더라도 실제 호환성은 검증되지 않았습니다.
+- Python 3.10~3.14는 GitHub Actions의 수집기 테스트 대상입니다. 이는 실제 GNOME UI나 실계정 연동을 검증한다는 의미가 아닙니다.
+- CLI의 최신 버전이 항상 호환되는 것은 아닙니다. 위 버전은 실제 조회가 확인된 기준이며, 동일 버전이라도 구독 정책·응답 형식 변경에 따라 조회가 실패할 수 있습니다.
+- 두 CLI는 선택 사항입니다. 하나만 설치하면 해당 서비스만 표시하며, 둘 다 설치하지 않아도 위젯을 설치할 수 있습니다.
+
+### 설치 전 환경 진단
+
+프로젝트 폴더에서 다음 명령을 실행합니다.
+
+```bash
+bash check_environment.sh
+```
+
+`PASS`는 해당 검사 통과, `WARN`은 호환성 미검증 또는 버전 주의, `SKIP`은 선택 사항 미설치, `FAIL`은 필수 요구사항 불충족을 의미합니다. 진단은 CLI 버전과 실행 파일 존재 여부만 확인하며, 구독 로그인이나 실제 사용량 조회는 검사하지 않습니다. 인증 파일을 읽거나 수정하지 않습니다.
+
+`install.sh`도 설치 전에 동일한 검사를 실행합니다. GNOME 버전 불일치, 필수 명령 누락 또는 시스템 Python 버전 미달 시 파일 복사 전에 설치를 중단합니다. 다른 배포판이나 선택 CLI의 버전 문제는 경고만 표시합니다.
 
 ## 설치
 
@@ -115,6 +144,9 @@ PY
 - `stylesheet.css`: GNOME UI의 다크/라이트 스타일.
 - `metadata.json`: GNOME 확장 등록 정보.
 - `install.sh`, `uninstall.sh`: 사용자 단위 설치/제거.
+- `check_environment.sh`: 설치 전 호환성 진단.
+- `test_environment.py`: 가상 GNOME 및 CLI 환경으로 진단 동작 검증.
+- `.github/workflows/ci.yml`: Python 버전별 자동 테스트 및 구문 검사.
 - `test_collector.py`: 가상 응답으로 파싱·캐시·프로토콜 검증.
 
 ## 문제 해결
@@ -157,7 +189,7 @@ rm -rf -- "${XDG_CACHE_HOME:-$HOME/.cache}/ai-usage-monitor"
 
 ## 검증 범위
 
-`python3 -m unittest -v test_collector` 테스트 10개, `bash -n install.sh uninstall.sh` 검사, JS 모듈 구문 검사를 모두 통과했습니다. 현재 패키지는 v0.4이며 사용자 제공 실제 Claude 응답 구조를 테스트에 반영했습니다. 실제 GNOME Shell 세션에서는 추가 검증이 필요합니다.
+`python3 -m unittest -v test_collector` 테스트 10개, `bash -n install.sh uninstall.sh` 검사, JS 모듈 구문 검사를 모두 통과했습니다. 이전 v0.4에서 사용자 제공 실제 Claude 응답 구조를 테스트에 반영했습니다. v0.5에서는 환경 진단 테스트 6개 및 Python 3.10~3.14 대상 GitHub Actions 검사를 추가했습니다. CI 최신 결과는 [Actions](../../actions)에서 확인할 수 있습니다. 실제 GNOME Shell 세션 및 실계정 연동은 별도로 검증해야 합니다.
 
 ## 라이선스 및 브랜드
 

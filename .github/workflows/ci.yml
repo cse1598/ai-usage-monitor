@@ -1,0 +1,34 @@
+name: Compatibility checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Collector tests (mock CLI responses)
+        run: python -m unittest -v test_collector
+      - name: Environment checks (mock GNOME and CLIs)
+        run: python -m unittest -v test_environment
+      - name: Shell syntax
+        run: |
+          for script in install.sh uninstall.sh check_environment.sh; do
+            bash -n "$script" || exit 1
+          done
+      - name: JavaScript module syntax
+        run: node --input-type=module --check < extension.js
+      - name: Extension metadata
+        run: python -m json.tool metadata.json > /dev/null

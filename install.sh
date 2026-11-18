@@ -2,6 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 if [[ $EUID == 0 ]]; then echo 'Run as your desktop user, not sudo.'; exit 1; fi
+bash ./check_environment.sh
 uuid=ai-usage-monitor@local
 dest="${XDG_DATA_HOME:-$HOME/.local/share}/gnome-shell/extensions/$uuid"
 conf="${XDG_CONFIG_HOME:-$HOME/.config}/ai-usage-monitor"
@@ -10,7 +11,7 @@ if command -v gnome-extensions >/dev/null; then gnome-extensions disable "$uuid"
 install -m 644 metadata.json extension.js stylesheet.css collector.py "$dest/"
 install -d "$dest/icons"
 install -m 644 icons/codex.svg icons/claude-code.svg icons/NOTICE.md "$dest/icons/"
-python3 - "$conf/config.json" "$(command -v codex || true)" "$(command -v claude || true)" <<'PY'
+/usr/bin/python3 - "$conf/config.json" "$(command -v codex || true)" "$(command -v claude || true)" <<'PY'
 import json, pathlib,sys,os
 p=pathlib.Path(sys.argv[1]); data=json.loads(p.read_text()) if p.exists() else {}
 for key,path in zip(('codex','claude'),sys.argv[2:]):
