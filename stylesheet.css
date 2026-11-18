@@ -1,11 +1,11 @@
 .aum-panel { spacing: 5px; }
 .aum-panel-divider { color: rgba(255,255,255,0.55); padding: 0 4px; }
-.aum-card { spacing: 8px; padding: 3px 5px; min-width: 252px; }
+.aum-card { spacing: 8px; padding: 3px 5px; min-width: 300px; }
 .aum-title { font-size: 15px; font-weight: bold; }
 .aum-group { font-size: 14px; font-weight: bold; padding-top: 6px; spacing: 7px; }
 .aum-row { spacing: 5px; padding-bottom: 3px; }
 .aum-percent { font-weight: bold; }
-.aum-track { background-color: rgba(128,128,128,0.30); border-radius: 4px; }
+.aum-track { background-color: rgba(128,128,128,0.30); border-radius: 8px; }
 .aum-muted { font-size: 11px; }
 .aum-error { font-size: 10px; }
 .aum-dark { color: #f1f1f1; -arrow-background-color: #242424; -arrow-border-color: #444444; }
@@ -22,3 +22,25 @@
 .aum-light .aum-error { color: #a04b13; }
 
 .aum-section { spacing: 8px; }
+
+/* Rounded surfaces, scoped to this extension's popup. */
+.aum-dark, .aum-light {
+    -arrow-border-radius: 20px;
+}
+.aum-dark .popup-menu-content, .aum-light .popup-menu-content,
+.aum-dark.popup-menu-content, .aum-light.popup-menu-content {
+    border-radius: 20px;
+}
+.aum-dark .popup-menu-item, .aum-light .popup-menu-item {
+    border-radius: 12px;
+}
+.aum-dark .popup-sub-menu, .aum-light .popup-sub-menu {
+    border-radius: 14px;
+}
+.aum-dark .aum-section, .aum-light .aum-section {
+    border-radius: 14px;
+    padding: 8px 10px;
+}
+.aum-dark .aum-section { background-color: rgba(255,255,255,0.045); }
+.aum-light .aum-section { background-color: rgba(0,0,0,0.035); }
+.aum-error, .aum-muted { max-width: 300px; }

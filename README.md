@@ -1,5 +1,7 @@
 # AI Usage Monitor
 
+[English README · v0.6](README.en.md)
+
 > GNOME Shell 46 · Ubuntu 24.04 LTS · v0.5
 
 독립적인 비공식 오픈소스 프로젝트이며 OpenAI 또는 Anthropic과 제휴하지 않습니다.

@@ -6,22 +6,14 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
+import {LANGUAGES, defaultLanguage, translate, translateError, countdown} from './i18n.js';
 
-const GROUPS = [['Codex', [['codex_5h','5시간'],['codex_week','주간']]], ['Claude Code', [['claude_5h','5시간'],['claude_week','주간 전체']]]];
-const WIDTH = 252;
+const GROUPS = [['Codex', [['codex_5h','fiveHour'],['codex_week','weekly']]], ['Claude Code', [['claude_5h','fiveHour'],['claude_week','weeklyAll']]]];
+const WIDTH = 300;
 const POLL_SECONDS = 60;
-const THEME_NAMES = {auto:'시스템 설정',dark:'다크',light:'라이트'};
+const THEMES = ['auto','dark','light'];
 const THEME_PATH = GLib.build_filenamev([GLib.get_user_config_dir(),'ai-usage-monitor','theme']);
-function countdown(t) {
-    if (!Number.isFinite(t)) return '초기화 시간 미제공';
-    let s = Math.floor(t - Date.now()/1000);
-    if (s <= 0) return '초기화 예정 시각 경과 · 재조회 필요';
-    const d=Math.floor(s/86400); s%=86400;
-    const h=Math.floor(s/3600); s%=3600;
-    const m=Math.floor(s/60); s%=60;
-    const pad=n=>String(n).padStart(2,'0');
-    return `${d ? d+'일 ' : ''}${pad(h)}:${pad(m)}:${pad(s)}`;
-}
+const LANGUAGE_PATH = GLib.build_filenamev([GLib.get_user_config_dir(),'ai-usage-monitor','language']);
 function color(p,dark) {return dark ? (p>=50?'#52c99a':p>=20?'#e5b85c':'#ee717b') : (p>=50?'#087e55':p>=20?'#916000':'#b42335');}
 function valid(row) {return row && Number.isFinite(row.remaining);}
 function expired(row) {return Number.isFinite(row?.reset_at) && row.reset_at <= Date.now()/1000;}
@@ -29,7 +21,13 @@ function label(text, style_class='') {return new St.Label({text,style_class,y_al
 
 export default class UsageMonitor extends Extension {
     enable() {
-        this._active=true; this._data={rows:{},errors:{}}; this._rows={}; this._groups={}; this._panelGroups={}; this._lastRequest=0;
+        this._active=true; this._data={rows:{},errors:{}}; this._rows={}; this._groups={}; this._panelGroups={}; this._lastRequest=0; this._failed=false;
+        this._language=defaultLanguage(GLib.get_language_names()[0]);
+        try {
+            const [ok,bytes]=GLib.file_get_contents(LANGUAGE_PATH);
+            const saved=new TextDecoder().decode(bytes).trim();
+            if(ok && Object.hasOwn(LANGUAGES,saved)) this._language=saved;
+        } catch(e) { /* first installation */ }
         this._button=new PanelMenu.Button(0.5,'AI Usage Monitor',false);
         const panel=new St.BoxLayout({style_class:'aum-panel',y_align:Clutter.ActorAlign.CENTER});
         this._panelDemo=label('DEMO'); this._panelDemo.hide(); panel.add_child(this._panelDemo);
@@ -58,42 +56,67 @@ export default class UsageMonitor extends Extension {
             for (const [key,name] of items) {
                 const row=new St.BoxLayout({vertical:true,style_class:'aum-row'});
                 const heading=new St.BoxLayout();
-                const title=label(name); title.x_expand=true; heading.add_child(title);
+                const title=label(this._tr(name)); title.x_expand=true; heading.add_child(title);
                 const pct=label('—','aum-percent'); heading.add_child(pct); row.add_child(heading);
                 const track=new St.Widget({style_class:'aum-track',width:WIDTH,height:7,layout_manager:new Clutter.FixedLayout()});
-                const fill=new St.Widget({height:7,width:0,style:'border-radius: 4px;'}); track.add_child(fill); row.add_child(track);
-                const timer=label('조회 중…','aum-muted'); row.add_child(timer); section.add_child(row);
-                this._rows[key]={pct,fill,timer};
+                const fill=new St.Widget({height:7,width:0,style:'border-radius: 8px;'}); track.add_child(fill); row.add_child(track);
+                const timer=label(this._tr('querying'),'aum-muted'); row.add_child(timer); section.add_child(row);
+                this._rows[key]={pct,fill,timer,title,name};
             }
-            const error=label('','aum-error'); error.hide(); section.add_child(error); this[`_error_${group==='Codex'?'codex':'claude'}`]=error;
+            const error=label('','aum-error'); error.clutter_text.line_wrap=true; error.hide(); section.add_child(error); this[`_error_${group==='Codex'?'codex':'claude'}`]=error;
         }
-        this._empty=label('CLI를 설치하고 구독 계정으로 로그인하세요.','aum-muted'); this._empty.hide(); box.add_child(this._empty);
-        this._footer=label('조회 중…','aum-muted'); box.add_child(this._footer);
+        this._empty=label(this._tr('installCli'),'aum-muted'); this._empty.clutter_text.line_wrap=true; this._empty.hide(); box.add_child(this._empty);
+        this._footer=label(this._tr('querying'),'aum-muted'); box.add_child(this._footer);
         this._button.menu.addMenuItem(card);
-        this._refreshItem=this._button.menu.addAction('지금 새로고침',()=>this._refresh());
-        this._themeMenu=new PopupMenu.PopupSubMenuMenuItem('테마');
+        this._refreshItem=this._button.menu.addAction(this._tr('refresh'),()=>this._refresh());
+        this._themeMenu=new PopupMenu.PopupSubMenuMenuItem(this._tr('theme'));
         this._button.menu.addMenuItem(this._themeMenu);
-        for (const mode of ['auto','dark','light'])
-            this._themeMenu.menu.addAction(THEME_NAMES[mode],()=>this._setTheme(mode));
+        this._themeItems={};
+        for (const mode of THEMES)
+            this._themeItems[mode]=this._themeMenu.menu.addAction(this._tr(mode),()=>this._setTheme(mode));
+        this._languageMenu=new PopupMenu.PopupSubMenuMenuItem(this._tr('language'));
+        this._button.menu.addMenuItem(this._languageMenu);
+        for (const lang of ['ko','en'])
+            this._languageMenu.menu.addAction(LANGUAGES[lang],()=>this._setLanguage(lang));
         this._interfaceSettings=new Gio.Settings({schema_id:'org.gnome.desktop.interface'});
         this._themeMode='auto';
         try {
             const [ok,bytes]=GLib.file_get_contents(THEME_PATH);
             const mode=new TextDecoder().decode(bytes).trim();
-            if(ok && Object.hasOwn(THEME_NAMES,mode)) this._themeMode=mode;
+            if(ok && THEMES.includes(mode)) this._themeMode=mode;
         } catch(e) { /* first installation */ }
         this._themeSignal=this._interfaceSettings.connect('changed::color-scheme',()=>this._applyTheme());
         this._applyTheme();
+        this._applyLanguage();
         Main.panel.addToStatusArea(this.uuid,this._button,0,'right');
         this._tick=GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT,1,()=>{this._render();return GLib.SOURCE_CONTINUE;});
         this._poll=GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT,POLL_SECONDS,()=>{this._refresh();return GLib.SOURCE_CONTINUE;});
         this._refresh();
     }
+    _tr(key) { return translate(this._language,key); }
+    _setLanguage(language) {
+        if(!Object.hasOwn(LANGUAGES,language)) return;
+        this._language=language;
+        try {
+            GLib.mkdir_with_parents(GLib.path_get_dirname(LANGUAGE_PATH),0o700);
+            GLib.file_set_contents(LANGUAGE_PATH,language+'\n');
+        } catch(e) { console.error('AI Usage Monitor: language save failed'); }
+        this._applyLanguage();
+    }
+    _applyLanguage() {
+        for (const ui of Object.values(this._rows)) ui.title.text=this._tr(ui.name);
+        this._empty.text=this._tr('installCli');
+        this._refreshItem.label.text=this._tr('refresh');
+        for (const mode of THEMES) this._themeItems[mode].label.text=this._tr(mode);
+        this._themeMenu.label.text=this._tr('theme')+': '+this._tr(this._themeMode);
+        this._languageMenu.label.text=this._tr('language')+': '+LANGUAGES[this._language];
+        this._render();
+    }
     _providerIcon(name,size) {
         return new St.Icon({gicon:new Gio.FileIcon({file:Gio.File.new_for_path(`${this.path}/icons/${name}.svg`)}),icon_size:size,y_align:Clutter.ActorAlign.CENTER});
     }
     _setTheme(mode) {
-        if(!Object.hasOwn(THEME_NAMES,mode)) return;
+        if(!THEMES.includes(mode)) return;
         this._themeMode=mode;
         try {
             GLib.mkdir_with_parents(GLib.path_get_dirname(THEME_PATH),0o700);
@@ -106,13 +129,13 @@ export default class UsageMonitor extends Extension {
         const actor=this._button.menu.actor;
         actor.remove_style_class_name('aum-dark'); actor.remove_style_class_name('aum-light');
         actor.add_style_class_name(this._dark?'aum-dark':'aum-light');
-        this._themeMenu.label.text=`테마: ${THEME_NAMES[this._themeMode]}`;
+        this._themeMenu.label.text=this._tr('theme')+': '+this._tr(this._themeMode);
         this._render();
     }
     _refresh() {
         if (!this._active || this._process || Date.now()-this._lastRequest<30000) return;
         this._lastRequest=Date.now();
-        this._footer.text='사용량 조회 중…';
+        this._footer.text=this._tr('querying');
         try {
             const proc=Gio.Subprocess.new(['/usr/bin/python3',`${this.path}/collector.py`],Gio.SubprocessFlags.STDOUT_PIPE|Gio.SubprocessFlags.STDERR_PIPE);
             this._process=proc;
@@ -144,18 +167,18 @@ export default class UsageMonitor extends Extension {
         this._panelCodex.text=compact('codex_5h'); this._panelClaude.text=compact('claude_5h');
         for (const [key, ui] of Object.entries(this._rows)) {
             const row=data.rows?.[key]; const ok=valid(row); const past=expired(row);
-            ui.pct.text=ok&&!past?`${row.stale?'~':''}${row.remaining}% 남음`:'—';
+            ui.pct.text=ok&&!past?`${row.stale?'~':''}${row.remaining}${this._tr('remaining')}`:'—';
             ui.pct.set_style(`color: ${ok&&!past?color(row.remaining,this._dark):(this._dark?'#aaaaaa':'#666666')};`);
             ui.fill.width=ok&&!past?Math.round(WIDTH*row.remaining/100):0;
-            ui.fill.set_style(`background-color: ${ok?color(row.remaining,this._dark):'transparent'}; border-radius: 4px;`);
-            ui.timer.text=ok?`${row.stale?'이전 값 · ':''}${!Number.isFinite(row.reset_at) && row.active === false ? '타이머 미시작' : countdown(row.reset_at)}`:'한도 데이터 없음';
+            ui.fill.set_style(`background-color: ${ok?color(row.remaining,this._dark):'transparent'}; border-radius: 8px;`);
+            ui.timer.text=ok?`${row.stale?this._tr('stale'):''}${!Number.isFinite(row.reset_at) && row.active === false ? this._tr('inactive') : countdown(row.reset_at,this._language)}`:this._tr('noData');
         }
         for (const provider of ['codex','claude']) {
             const e=this[`_error_${provider}`]; const msg=data.errors?.[provider];
-            e.text=msg||''; e.visible=Boolean(msg);
+            e.text=translateError(this._language,msg); e.visible=Boolean(msg);
         }
-        const time=data.checked_at?new Date(data.checked_at*1000).toLocaleTimeString():'—';
-        this._footer.text=this._process?'사용량 조회 중…':this._failed?'수집기 실행 실패 · 이전 값':!codex&&!claude?'CLI 미설치 · 1분마다 자동 탐색':`${data.demo?'데모 · ':''}마지막 조회 ${time} · 1분 간격`;
+        const time=data.checked_at?new Date(data.checked_at*1000).toLocaleTimeString(this._language==='ko'?'ko-KR':'en-US'):'—';
+        this._footer.text=this._process?this._tr('querying'):this._failed?this._tr('failed'):!codex&&!claude?this._tr('noCli'):`${data.demo?this._tr('demo'):''}${this._tr('updated')} ${time} · ${this._tr('interval')}`;
     }
     disable() {
         this._active=false;

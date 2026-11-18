@@ -8,7 +8,7 @@ dest="${XDG_DATA_HOME:-$HOME/.local/share}/gnome-shell/extensions/$uuid"
 conf="${XDG_CONFIG_HOME:-$HOME/.config}/ai-usage-monitor"
 mkdir -p "$dest" "$conf"
 if command -v gnome-extensions >/dev/null; then gnome-extensions disable "$uuid" 2>/dev/null || true; fi
-install -m 644 metadata.json extension.js stylesheet.css collector.py "$dest/"
+install -m 644 metadata.json extension.js i18n.js stylesheet.css collector.py "$dest/"
 install -d "$dest/icons"
 install -m 644 icons/codex.svg icons/claude-code.svg icons/NOTICE.md "$dest/icons/"
 /usr/bin/python3 - "$conf/config.json" "$(command -v codex || true)" "$(command -v claude || true)" <<'PY'
