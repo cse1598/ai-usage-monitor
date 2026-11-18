@@ -3,7 +3,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 
 // Import the GJS module as an ES module without changing Node's package type.
-const source = readFileSync(new URL('./i18n.js', import.meta.url), 'utf8');
+const source = readFileSync(new URL('../extension/i18n.js', import.meta.url), 'utf8');
 const {defaultLanguage, resolveLanguage, LANGUAGE_MODES, translate, translateError, countdown, resetLabel} =
     await import('data:text/javascript;base64,' + Buffer.from(source).toString('base64'));
 
@@ -48,7 +48,7 @@ test('backend error messages', () => {
     assert.equal(translateError('en','새 오류'),'CLI execution/response error');
     assert.equal(translateError('en',null),'');
     // Every currently emitted QueryError message must have an English mapping.
-    const collector=readFileSync(new URL('./collector.py', import.meta.url),'utf8');
+    const collector=readFileSync(new URL('../extension/collector.py', import.meta.url),'utf8');
     for(const match of collector.matchAll(/raise QueryError\('([^']+)'\)/g))
         assert.notEqual(translateError('en',match[1]),'CLI execution/response error',match[1]);
 });

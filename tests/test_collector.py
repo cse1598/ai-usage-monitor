@@ -1,5 +1,7 @@
 import unittest, tempfile, pathlib, os, json, time
 from unittest.mock import patch
+import sys
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / 'extension'))
 import collector as c
 
 class Tests(unittest.TestCase):

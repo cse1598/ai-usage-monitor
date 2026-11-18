@@ -3,14 +3,24 @@
 > [!NOTE]
 > **한국어 사용자이신가요? [한국어 설치 및 사용 안내 바로가기 →](README.ko.md)**
 
-> GNOME Shell 46 · Ubuntu 24.04 LTS · v0.11
+> GNOME Shell 46 · Ubuntu 24.04 LTS · v0.12
 
 An independent, unofficial open-source project. Not affiliated with OpenAI or Anthropic.
 
 A lightweight GNOME Shell top-panel extension for Ubuntu 24.04. Monitor Codex and Claude Code subscription quotas (5-hour and weekly) and their reset countdowns. No separate login, API key or external Python packages are required.
 
-## What's new in v0.11
+## Screenshot
 
+<p align="center">
+  <img src="docs/screenshots/ubuntu-24.04-dark-en.webp" alt="Actual AI Usage Monitor on Ubuntu 24.04 in dark mode, displaying Codex and Claude Code quotas and reset countdowns" width="326">
+</p>
+
+<p align="center"><em>Actual desktop screenshot (English, dark mode). The percentages and countdowns are captured at one moment in time.</em></p>
+
+## What's new in v0.12
+
+- Organized repository layout: runtime files under `extension/`, tests under `tests/`, and documentation images under `docs/`.
+- Removed unused legacy symbolic icons; runtime behavior is unchanged.
 - Compact flat popup with a single rounded outer border and one separator below each detected AI provider.
 - Refresh, language and theme controls are now icon-only buttons in the header.
 - English and Korean UI, including errors, quota labels, countdowns, and theme controls.
@@ -114,9 +124,9 @@ Missing CLIs are neither launched nor treated as errors. Real query failures fro
 From the extracted or cloned project directory:
 
 ```bash
-python3 collector.py --demo
+python3 extension/collector.py --demo
 bash install.sh
-python3 collector.py | python3 -m json.tool
+python3 extension/collector.py | python3 -m json.tool
 ```
 
 Log out and back in, then run the commands below (or enable AI Usage Monitor under Installed in Extension Manager):
@@ -145,7 +155,7 @@ Existing users do not need to reinstall dependencies. Extract the new ZIP over t
 
 ## Theme and language
 
-Click the **theme icon** in the top-right corner to toggle Light ↔ Dark. The first launch follows Ubuntu's color scheme. When the widget and system match, the widget follows subsequent system changes. When they differ, the widget preserves its own value until the system matches it again, at which point synchronization is restored automatically. The preference is saved to `~/.config/ai-usage-monitor/theme` (respecting XDG_CONFIG_HOME). The GNOME top panel retains its native theme. The refresh icon manually queries usage. SVG logos are bundled locally; see `icons/NOTICE.md` for attribution.
+Click the **theme icon** in the top-right corner to toggle Light ↔ Dark. The first launch follows Ubuntu's color scheme. When the widget and system match, the widget follows subsequent system changes. When they differ, the widget preserves its own value until the system matches it again, at which point synchronization is restored automatically. The preference is saved to `~/.config/ai-usage-monitor/theme` (respecting XDG_CONFIG_HOME). The GNOME top panel retains its native theme. The refresh icon manually queries usage. SVG logos are bundled locally; see `extension/icons/NOTICE.md` for attribution.
 
 Click the **language icon** to toggle English ↔ 한국어. The same automatic synchronization rule applies to the effective GNOME session language (Korean for Korean locales, English otherwise). The widget changes immediately on a click; a GNOME session language change normally requires logging out and back in. Saved preferences are reconciled with the current session at startup and whenever the popup opens. The mode is stored in `~/.config/ai-usage-monitor/language` (respecting XDG_CONFIG_HOME).
 
@@ -167,24 +177,33 @@ Refresh after any in-flight query finishes, or disable and re-enable the extensi
 
 ## Project structure
 
-- `collector.py`: CLI JSON protocols, quota normalization, parallel queries and caching with the Python standard library.
-- `extension.js`: GJS panel, popup, asynchronous collection, timers and errors.
-- `i18n.js`: English/Korean UI translations and countdown formatting.
-- `preferences.js`: automatic synchronization and one-click toggles.
-- `test_preferences.mjs`: synchronization state transition tests.
-- `stylesheet.css`: rounded GNOME light/dark styles.
-- `metadata.json`: GNOME extension metadata.
-- `install.sh`, `uninstall.sh`: per-user installation/removal.
-- `check_environment.sh`: pre-install compatibility checks.
-- `test_environment.py`: diagnostics tests with simulated GNOME and CLIs.
-- `test_collector.py`: mock response parsing, cache and protocol tests.
-- `test_i18n.mjs`: translation and countdown tests.
-- `.github/workflows/ci.yml`: Python version matrix, translation tests and syntax checks.
+```text
+ai-usage-monitor/
+├── extension/                # GNOME runtime package
+│   ├── metadata.json
+│   ├── extension.js          # Panel and popup
+│   ├── collector.py          # CLI usage collection
+│   ├── i18n.js               # English/Korean strings
+│   ├── preferences.js        # System synchronization
+│   ├── stylesheet.css
+│   └── icons/                # Active SVG assets and attribution
+├── tests/                    # Python and JavaScript tests
+├── docs/
+│   └── screenshots/          # Actual desktop screenshots
+├── .github/workflows/ci.yml   # Compatibility checks
+├── install.sh
+├── uninstall.sh
+├── check_environment.sh
+├── README.md                 # English
+└── README.ko.md              # Korean
+```
+
+Only the runtime files in `extension/` are copied into the GNOME extension directory. The project-level scripts remain in the repository root for convenient installation, updating, and removal. Tests and screenshots are not installed.
 
 ## Troubleshooting
 
 ```bash
-python3 collector.py | python3 -m json.tool
+python3 extension/collector.py | python3 -m json.tool
 journalctl --user -b -o cat | grep -iE 'ai-usage-monitor|JS ERROR' | tail -n 50
 ```
 
@@ -222,18 +241,18 @@ rm -rf -- "${XDG_CACHE_HOME:-$HOME/.cache}/ai-usage-monitor"
 ## Testing
 
 ```bash
-python3 -m unittest -v test_collector test_environment
-node --test test_i18n.mjs test_preferences.mjs
+python3 -m unittest discover -s tests -p 'test_*.py' -v
+node --test tests/test_i18n.mjs tests/test_preferences.mjs
 for script in install.sh uninstall.sh check_environment.sh; do
     bash -n "$script" || exit 1
 done
-node --input-type=module --check < extension.js
-node --input-type=module --check < i18n.js
-node --input-type=module --check < preferences.js
+node --input-type=module --check < extension/extension.js
+node --input-type=module --check < extension/i18n.js
+node --input-type=module --check < extension/preferences.js
 ```
 
-The 11 collector tests and 6 environment tests are included alongside the localization tests. See [GitHub Actions](../../actions) for CI results. Actual GNOME rendering and live account integration require separate verification.
+The 11 collector tests and 6 environment tests are included alongside the localization tests. See [GitHub Actions](https://github.com/cse1598/ai-usage-monitor/actions) for CI results. Actual GNOME rendering and live account integration require separate verification.
 
 ## License and trademarks
 
-Icons are included under the LobeHub Icons MIT license; see `icons/LICENSE`. Product names and logos belong to their respective rights holders and do not imply affiliation or endorsement. The repository owner selects the license for the project's code.
+Icons are included under the LobeHub Icons MIT license; see `extension/icons/LICENSE`. Product names and logos belong to their respective rights holders and do not imply affiliation or endorsement. The repository owner selects the license for the project's code.

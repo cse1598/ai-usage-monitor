@@ -8,9 +8,13 @@ dest="${XDG_DATA_HOME:-$HOME/.local/share}/gnome-shell/extensions/$uuid"
 conf="${XDG_CONFIG_HOME:-$HOME/.config}/ai-usage-monitor"
 mkdir -p "$dest" "$conf"
 if command -v gnome-extensions >/dev/null; then gnome-extensions disable "$uuid" 2>/dev/null || true; fi
-install -m 644 metadata.json extension.js i18n.js preferences.js stylesheet.css collector.py "$dest/"
+install -m 644 extension/metadata.json extension/extension.js extension/i18n.js extension/preferences.js extension/stylesheet.css extension/collector.py "$dest/"
 install -d "$dest/icons"
-install -m 644 icons/codex.svg icons/claude-code.svg icons/*-dark.svg icons/*-light.svg icons/NOTICE.md icons/LICENSE "$dest/icons/"
+# Remove only obsolete assets from earlier versions, not user configuration.
+for name in empty-monitor language moon refresh sparkle sun system-theme; do
+    rm -f -- "$dest/icons/$name-symbolic.svg"
+done
+install -m 644 extension/icons/codex.svg extension/icons/claude-code.svg extension/icons/*-dark.svg extension/icons/*-light.svg extension/icons/NOTICE.md extension/icons/LICENSE "$dest/icons/"
 /usr/bin/python3 - "$conf/config.json" "$(command -v codex || true)" "$(command -v claude || true)" <<'PY'
 import json, pathlib,sys,os
 p=pathlib.Path(sys.argv[1]); data=json.loads(p.read_text()) if p.exists() else {}

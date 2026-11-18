@@ -1,7 +1,7 @@
 import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-const source = readFileSync(new URL('./preferences.js',import.meta.url),'utf8');
+const source = readFileSync(new URL('../extension/preferences.js',import.meta.url),'utf8');
 const {syncMode,toggleMode}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 
 for (const [name,first,second] of [['theme','light','dark'],['language','ko','en']]) {

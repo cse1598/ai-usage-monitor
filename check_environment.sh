@@ -52,7 +52,7 @@ py_ok = sys.version_info >= (3, 10)
 report('PASS' if py_ok else 'FAIL', 'Python (/usr/bin/python3)',
        f'{sys.version.split()[0]} (minimum 3.10; tested on 3.12.3)')
 
-supported = json.loads(pathlib.Path('metadata.json').read_text())['shell-version']
+supported = json.loads(pathlib.Path('extension/metadata.json').read_text())['shell-version']
 gnome = version(['gnome-shell', '--version'])
 match = re.search(r'GNOME Shell (\d+)(?:\D|$)', gnome or '')
 gnome_ok = bool(match and match.group(1) in supported)
@@ -63,6 +63,7 @@ for cmd in ('gnome-extensions', 'install'):
            'available' if shutil.which(cmd) else 'not found')
 
 if py_ok:
+    sys.path.insert(0, str(pathlib.Path('extension').resolve()))
     from collector import CONFIG, read_json, find_cli
     config = read_json(CONFIG)
     # Match the collector's executable discovery. The installer captures

@@ -113,7 +113,7 @@ def query_codex(config):
     env = os.environ.copy(); env.pop('OPENAI_API_KEY', None)
     if config.get('path'): env['PATH'] = config['path']
     with Session([cli('codex', config), 'app-server'], env) as s:
-        s.send({'id': 1, 'method': 'initialize', 'params': {'clientInfo': {'name':'ai_usage_monitor','title':'AI Usage Monitor','version':'0.11.0'}}})
+        s.send({'id': 1, 'method': 'initialize', 'params': {'clientInfo': {'name':'ai_usage_monitor','title':'AI Usage Monitor','version':'0.12.0'}}})
         m = s.wait(lambda m: m.get('id') == 1 and ('result' in m or 'error' in m), 20)
         if 'error' in m: raise QueryError('Codex 초기화 실패 (CLI 업데이트 확인)')
         s.send({'method':'initialized'})

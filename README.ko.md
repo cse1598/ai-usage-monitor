@@ -3,13 +3,21 @@
 [English README](README.md)
 
 > [!NOTE]
-> **v0.11 변경 안내:** 상단 우측 아이콘을 가는 선형 SVG로 표시하며, 아이콘으로 테마(라이트↔다크)와 언어(한국어↔영어)를 즉시 전환합니다. 최초에는 시스템 설정을 따르며, 위젯과 시스템 설정이 같아지면 자동으로 연동을 재개합니다. 시스템 언어 변경은 GNOME 재로그인 후 반영됩니다. 수동 새로고침의 30초 제한은 제거되었으며 조회 중에만 중복 요청을 막습니다. 새로고침 시 잔여율과 초기화 시각을 함께 재조회하며, 응답 수신 후 새로운 시각을 기준으로 카운트다운을 갱신합니다. 아래 기존 안내와 다른 부분은 이 최신 안내를 따릅니다.
+> **v0.12 변경 안내:** 상단 우측 아이콘을 가는 선형 SVG로 표시하며, 아이콘으로 테마(라이트↔다크)와 언어(한국어↔영어)를 즉시 전환합니다. 최초에는 시스템 설정을 따르며, 위젯과 시스템 설정이 같아지면 자동으로 연동을 재개합니다. 시스템 언어 변경은 GNOME 재로그인 후 반영됩니다. 수동 새로고침의 30초 제한은 제거되었으며 조회 중에만 중복 요청을 막습니다. 새로고침 시 잔여율과 초기화 시각을 함께 재조회하며, 응답 수신 후 새로운 시각을 기준으로 카운트다운을 갱신합니다. 아래 기존 안내와 다른 부분은 이 최신 안내를 따릅니다.
 
-> GNOME Shell 46 · Ubuntu 24.04 LTS · v0.5
+> GNOME Shell 46 · Ubuntu 24.04 LTS · v0.12
 
 독립적인 비공식 오픈소스 프로젝트이며 OpenAI 또는 Anthropic과 제휴하지 않습니다.
 
-Ubuntu 24.04 / GNOME Shell 46용 상단 패널 확장 프로그램입니다. Codex 5시간·주간, Claude 5시간·주간 전체 잔여율 및 초기화 카운트다운만 표시합니다.
+Ubuntu 24.04 / GNOME Shell 46용 상단 패널 확장 프로그램입니다. Codex 5시간·주간, Claude 5시간·주간 잔여율 및 초기화 카운트다운만 표시합니다.
+
+## 실제 사용 화면
+
+<p align="center">
+  <img src="docs/screenshots/ubuntu-24.04-dark-en.webp" alt="Ubuntu 24.04 다크 모드에서 Codex 및 Claude Code 사용량과 초기화 시간을 표시하는 실제 화면" width="326">
+</p>
+
+<p align="center"><em>실제 Ubuntu 24.04 사용 화면입니다. 영어 및 다크 모드를 적용한 상태이며, 잔여율과 남은 시간은 촬영 시점의 값입니다.</em></p>
 
 ## 시스템 요구사항 및 호환성
 
@@ -93,9 +101,9 @@ claude auth login
 압축을 푼 폴더에서 다음 명령을 실행합니다.
 
 ```bash
-python3 collector.py --demo
+python3 extension/collector.py --demo
 bash install.sh
-python3 collector.py | python3 -m json.tool
+python3 extension/collector.py | python3 -m json.tool
 ```
 
 로그아웃 후 다시 로그인하여 다음 명령을 실행합니다(또는 Extension Manager의 Installed에서 활성화합니다).
@@ -105,7 +113,7 @@ gnome-extensions enable ai-usage-monitor@local
 gnome-extensions info ai-usage-monitor@local
 ```
 
-패널의 설치된 서비스 제품 아이콘과 잔여량을 클릭하면 해당 상세 항목 및 수동 새로고침을 볼 수 있습니다. 자동 조회는 1분마다, 카운트다운은 1초마다 갱신됩니다. 수동 조회의 최소 간격은 30초입니다. CLI 조회는 병렬로 수행합니다. 실제 토큰 수가 아니라 구독 한도의 잔여 백분율입니다.
+패널의 설치된 서비스 제품 아이콘과 잔여량을 클릭하면 해당 상세 항목 및 수동 새로고침을 볼 수 있습니다. 자동 조회는 1분마다, 카운트다운은 1초마다 갱신됩니다. 수동 조회는 이전 조회가 끝난 즉시 다시 실행할 수 있습니다. CLI 조회는 병렬로 수행합니다. 실제 토큰 수가 아니라 구독 한도의 잔여 백분율입니다.
 
 ## 업데이트
 
@@ -124,9 +132,9 @@ bash install.sh
 
 ## 테마
 
-팝업 하단 `테마`에서 시스템 설정 / 다크 / 라이트를 선택할 수 있습니다. 기본값은 시스템 설정이며, 우분투의 색상 모드 변경을 따라갑니다. 선택은 `~/.config/ai-usage-monitor/theme` (XDG_CONFIG_HOME 적용)에 보존됩니다. 상단 패널 자체는 GNOME 기본 테마를 유지합니다. 로고는 로컬 SVG로 포함되며 출처는 `icons/NOTICE.md`에 있습니다.
+팝업 우측 상단 테마 아이콘을 클릭하면 라이트 모드와 다크 모드를 전환합니다. 기본값은 시스템 설정이며, 위젯과 시스템 설정이 같으면 우분투의 색상 모드 변경을 따라갑니다. 선택은 `~/.config/ai-usage-monitor/theme` (XDG_CONFIG_HOME 적용)에 보존됩니다. 상단 패널 자체는 GNOME 기본 테마를 유지합니다. 로고는 로컬 SVG로 포함되며 출처는 `extension/icons/NOTICE.md`에 있습니다.
 
-서버 조회는 60초마다 시도하며, 이전 조회가 진행 중이면 중복 실행하지 않습니다. 수동 조회의 최소 간격은 30초입니다. 서버 오류/제한 발생 시 기존 캐시 및 오류 표시를 확인합니다.
+서버 조회는 60초마다 시도하며, 이전 조회가 진행 중이면 중복 실행하지 않습니다. 수동 조회는 이전 조회가 끝난 즉시 다시 실행할 수 있습니다. 서버 오류/제한 발생 시 기존 캐시 및 오류 표시를 확인합니다.
 
 ## UI 데모 모드
 
@@ -140,24 +148,36 @@ d=json.loads(p.read_text()); d['demo']=True; p.write_text(json.dumps(d,indent=2)
 PY
 ```
 
-새로고침(30초가 지난 뒤)하거나 확장 프로그램을 껐다가 켭니다. 패널에서 `DEMO`가 표시됩니다. 실사용 전 `True`를 `False`로 변경하여 같은 명령을 실행합니다.
+이전 조회가 끝난 후 새로고침하거나 확장 프로그램을 껐다가 켭니다. 패널에서 `DEMO`가 표시됩니다. 실사용 전 `True`를 `False`로 변경하여 같은 명령을 실행합니다.
 
 ## 파일 구성
 
-- `collector.py`: Python 표준 라이브러리로 CLI JSON 프로토콜 연결, 잔여량 정규화, 병렬 조회, 캐시.
-- `extension.js`: GJS, 패널과 팝업, 비동기 수집, 타이머, 오류 표시.
-- `stylesheet.css`: GNOME UI의 다크/라이트 스타일.
-- `metadata.json`: GNOME 확장 등록 정보.
-- `install.sh`, `uninstall.sh`: 사용자 단위 설치/제거.
-- `check_environment.sh`: 설치 전 호환성 진단.
-- `test_environment.py`: 가상 GNOME 및 CLI 환경으로 진단 동작 검증.
-- `.github/workflows/ci.yml`: Python 버전별 자동 테스트 및 구문 검사.
-- `test_collector.py`: 가상 응답으로 파싱·캐시·프로토콜 검증.
+```text
+ai-usage-monitor/
+├── extension/              # GNOME 실행 파일
+│   ├── metadata.json
+│   ├── extension.js
+│   ├── collector.py
+│   ├── i18n.js
+│   ├── preferences.js
+│   ├── stylesheet.css
+│   └── icons/
+├── tests/                  # 자동 테스트
+├── docs/screenshots/       # 실제 사용 화면
+├── .github/workflows/
+├── install.sh
+├── uninstall.sh
+├── check_environment.sh
+├── README.md
+└── README.ko.md
+```
+
+`extension/`에는 위젯 실행에 필요한 파일만 모아 두었습니다. 설치·제거·환경 진단 명령은 기존처럼 프로젝트 최상위 폴더에서 실행합니다. 테스트와 스크린샷은 설치 폴더에 복사하지 않습니다.
 
 ## 문제 해결
 
 ```bash
-python3 collector.py | python3 -m json.tool
+python3 extension/collector.py | python3 -m json.tool
 journalctl --user -b -o cat | grep -iE 'ai-usage-monitor|JS ERROR' | tail -n 50
 ```
 
@@ -194,8 +214,8 @@ rm -rf -- "${XDG_CACHE_HOME:-$HOME/.cache}/ai-usage-monitor"
 
 ## 검증 범위
 
-`python3 -m unittest -v test_collector` 테스트 10개, `bash -n install.sh uninstall.sh` 검사, JS 모듈 구문 검사를 모두 통과했습니다. 이전 v0.4에서 사용자 제공 실제 Claude 응답 구조를 테스트에 반영했습니다. v0.5에서는 환경 진단 테스트 6개 및 Python 3.10~3.14 대상 GitHub Actions 검사를 추가했습니다. CI 최신 결과는 [Actions](../../actions)에서 확인할 수 있습니다. 실제 GNOME Shell 세션 및 실계정 연동은 별도로 검증해야 합니다.
+`python3 -m unittest discover -s tests -p 'test_*.py' -v`로 확인하는 수집기 테스트와 환경 진단 테스트, `bash -n install.sh uninstall.sh` 검사, JS 모듈 구문 검사를 모두 통과했습니다. 이전 v0.4에서 사용자 제공 실제 Claude 응답 구조를 테스트에 반영했습니다. v0.5에서는 환경 진단 테스트 6개 및 Python 3.10~3.14 대상 GitHub Actions 검사를 추가했습니다. CI 최신 결과는 [Actions](https://github.com/cse1598/ai-usage-monitor/actions)에서 확인할 수 있습니다. 실제 GNOME Shell 세션 및 실계정 연동은 별도로 검증해야 합니다.
 
 ## 라이선스 및 브랜드
 
-아이콘은 LobeHub Icons의 MIT 라이선스에 따라 포함되며, 원본 라이선스는 `icons/LICENSE`를 참조합니다. 제품명 및 로고는 각 권리자의 자산이며 공식 제휴나 승인을 의미하지 않습니다. 코드의 공개 라이선스는 저장소 소유자가 선택합니다.
+아이콘은 LobeHub Icons의 MIT 라이선스에 따라 포함되며, 원본 라이선스는 `extension/icons/LICENSE`를 참조합니다. 제품명 및 로고는 각 권리자의 자산이며 공식 제휴나 승인을 의미하지 않습니다. 코드의 공개 라이선스는 저장소 소유자가 선택합니다.
