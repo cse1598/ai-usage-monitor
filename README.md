@@ -1,6 +1,6 @@
 # AI Usage Monitor
 
-[English README · v0.6](README.en.md)
+[English README](README.en.md)
 
 > GNOME Shell 46 · Ubuntu 24.04 LTS · v0.5
 

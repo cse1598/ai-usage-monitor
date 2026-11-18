@@ -1,6 +1,6 @@
 # AI Usage Monitor
 
-> GNOME Shell 46 · Ubuntu 24.04 LTS · v0.6
+> GNOME Shell 46 · Ubuntu 24.04 LTS · v0.7
 
 [한국어 README (Korean)](README.md)
 
@@ -8,9 +8,10 @@ An independent, unofficial open-source project. Not affiliated with OpenAI or An
 
 A lightweight GNOME Shell top-panel extension for Ubuntu 24.04. Monitor Codex and Claude Code subscription quotas (5-hour and weekly) and their reset countdowns. No separate login, API key or external Python packages are required.
 
-## What's new in v0.6
+## What's new in v0.7
 
-- Softer, rounded popup, menu items, provider cards and progress bars.
+- Compact flat popup with a single rounded outer border and one separator below each detected AI provider.
+- Refresh, language and theme controls are now icon-only buttons in the header.
 - English and Korean UI, including errors, quota labels, countdowns, and theme controls.
 - Language defaults to Korean on Korean desktops and English otherwise; the manual choice is saved locally.
 - Existing features remain unchanged: optional CLI detection, automatic refresh every minute, and light/dark/system themes.
@@ -139,9 +140,9 @@ Existing users do not need to reinstall dependencies. Extract the new ZIP over t
 
 ## Theme and language
 
-At the bottom of the popup, use **Theme** to select System, Dark, or Light. System mode follows Ubuntu's color scheme and is the default. Your preference is saved to `~/.config/ai-usage-monitor/theme` (respecting XDG_CONFIG_HOME). The GNOME top panel itself retains its native theme. SVG logos are bundled locally; see `icons/NOTICE.md` for attribution.
+In the top-right corner of the popup, click the **theme icon** to select System, Dark, or Light. System mode follows Ubuntu's color scheme and is the default. Your preference is saved to `~/.config/ai-usage-monitor/theme` (respecting XDG_CONFIG_HOME). The GNOME top panel itself retains its native theme. The refresh icon in the header manually queries usage. SVG logos are bundled locally; see `icons/NOTICE.md` for attribution.
 
-Use **Language** (or **언어**) to select English or 한국어. The initial choice follows the system language (Korean if the desktop locale is Korean; English otherwise). Changes take effect immediately without restarting or performing another query. The preference is saved to `~/.config/ai-usage-monitor/language` and persists across logins.
+Click the **language icon** in the top-right corner to select English or 한국어. The initial choice follows the system language (Korean if the desktop locale is Korean; English otherwise). Changes take effect immediately without restarting or performing another query. The preference is saved to `~/.config/ai-usage-monitor/language` and persists across logins.
 
 Usage queries are attempted every 60 seconds, without overlapping a previous query. Manual refresh is limited to one attempt per 30 seconds. Cached data and error messages are displayed when a server request fails.
 
@@ -223,7 +224,7 @@ node --input-type=module --check < extension.js
 node --input-type=module --check < i18n.js
 ```
 
-The 10 original collector tests and 6 environment tests are included alongside the new localization tests. See [GitHub Actions](../../actions) for CI results. Actual GNOME rendering and live account integration require separate verification.
+The 10 original collector tests and 6 environment tests are included alongside the localization tests. See [GitHub Actions](../../actions) for CI results. Actual GNOME rendering and live account integration require separate verification.
 
 ## License and trademarks
 

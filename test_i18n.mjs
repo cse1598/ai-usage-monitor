@@ -13,7 +13,7 @@ test('locale default', () => {
     assert.equal(defaultLanguage('fr_FR'), 'en');
 });
 test('all interface keys have both translations', () => {
-    for (const key of ['fiveHour','weekly','weeklyAll','remaining','refresh','theme','auto','dark','light','language','querying','installCli','noCli','noReset','expired','inactive','stale','noData','failed','demo','updated','interval','day','genericError']) {
+    for (const key of ['fiveHour','weekly','weeklyAll','remaining','refresh','theme','auto','dark','light','language','querying','noAi','installCli','noCli','noReset','expired','inactive','stale','noData','failed','demo','updated','interval','day','genericError']) {
         assert.notEqual(translate('en',key),key);
         assert.notEqual(translate('ko',key),key);
     }

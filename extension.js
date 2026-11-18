@@ -9,7 +9,7 @@ import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import {LANGUAGES, defaultLanguage, translate, translateError, countdown} from './i18n.js';
 
 const GROUPS = [['Codex', [['codex_5h','fiveHour'],['codex_week','weekly']]], ['Claude Code', [['claude_5h','fiveHour'],['claude_week','weeklyAll']]]];
-const WIDTH = 300;
+const WIDTH = 252;
 const POLL_SECONDS = 60;
 const THEMES = ['auto','dark','light'];
 const THEME_PATH = GLib.build_filenamev([GLib.get_user_config_dir(),'ai-usage-monitor','theme']);
@@ -29,6 +29,7 @@ export default class UsageMonitor extends Extension {
             if(ok && Object.hasOwn(LANGUAGES,saved)) this._language=saved;
         } catch(e) { /* first installation */ }
         this._button=new PanelMenu.Button(0.5,'AI Usage Monitor',false);
+        this._button.menu.box.add_style_class_name('aum-surface');
         const panel=new St.BoxLayout({style_class:'aum-panel',y_align:Clutter.ActorAlign.CENTER});
         this._panelDemo=label('DEMO'); this._panelDemo.hide(); panel.add_child(this._panelDemo);
         this._panelCodex=label('—'); this._panelClaude=label('—');
@@ -41,11 +42,32 @@ export default class UsageMonitor extends Extension {
                 this._panelDivider=label('·','aum-panel-divider'); panel.add_child(this._panelDivider);
             }
         }
-        this._panelEmpty=label('AI'); this._panelEmpty.hide(); panel.add_child(this._panelEmpty);
+        this._panelEmpty=new St.BoxLayout({style_class:'aum-panel',y_align:Clutter.ActorAlign.CENTER});
+        this._panelEmpty.add_child(this._controlIcon('sparkle',16)); this._panelEmpty.add_child(label('AI'));
+        this._panelEmpty.hide(); panel.add_child(this._panelEmpty);
         this._button.add_child(panel);
-        const card=new PopupMenu.PopupBaseMenuItem({reactive:false,can_focus:false});
-        const box=new St.BoxLayout({vertical:true,style_class:'aum-card'}); card.add_child(box);
-        box.add_child(label('AI Usage Monitor','aum-title'));
+        const card=new PopupMenu.PopupBaseMenuItem({reactive:false,can_focus:false,style_class:'aum-body-item'});
+        const box=new St.BoxLayout({vertical:true,style_class:'aum-card',x_expand:true}); card.add_child(box);
+        const top=new St.BoxLayout({style_class:'aum-header',x_expand:true});
+        const heading=label('AI Usage Monitor','aum-title'); heading.x_expand=true; top.add_child(heading);
+        this._refreshButton=this._iconButton('refresh','refresh',()=>{this._hideChoices();this._refresh();});
+        this._languageButton=this._iconButton('language','language',()=>this._toggleChoices('language'));
+        this._themeButton=this._iconButton('moon','theme',()=>this._toggleChoices('theme'));
+        for(const button of [this._refreshButton,this._languageButton,this._themeButton]) top.add_child(button);
+        box.add_child(top);
+        this._choiceRows={}; this._themeItems={}; this._languageItems={};
+        for(const kind of ['language','theme']) {
+            const choices=new St.BoxLayout({style_class:'aum-choices',x_expand:true});
+            const values=kind==='language'?Object.keys(LANGUAGES):THEMES;
+            for(const value of values) {
+                const text=kind==='language'?LANGUAGES[value]:this._tr(value);
+                const choice=new St.Button({label:text,style_class:'aum-choice',can_focus:true,x_expand:true});
+                choice.connect('clicked',()=>{if(kind==='language') this._setLanguage(value);else this._setTheme(value);this._hideChoices();});
+                choices.add_child(choice);
+                (kind==='language'?this._languageItems:this._themeItems)[value]=choice;
+            }
+            choices.hide();this._choiceRows[kind]=choices;box.add_child(choices);
+        }
         for (const [group, items] of GROUPS) {
             const provider=group==='Codex'?'codex':'claude';
             const section=new St.BoxLayout({vertical:true,style_class:'aum-section'});
@@ -59,25 +81,26 @@ export default class UsageMonitor extends Extension {
                 const title=label(this._tr(name)); title.x_expand=true; heading.add_child(title);
                 const pct=label('—','aum-percent'); heading.add_child(pct); row.add_child(heading);
                 const track=new St.Widget({style_class:'aum-track',width:WIDTH,height:7,layout_manager:new Clutter.FixedLayout()});
-                const fill=new St.Widget({height:7,width:0,style:'border-radius: 8px;'}); track.add_child(fill); row.add_child(track);
+                const fill=new St.Widget({height:7,width:0,style:'border-radius: 4px;'}); track.add_child(fill); row.add_child(track);
                 const timer=label(this._tr('querying'),'aum-muted'); row.add_child(timer); section.add_child(row);
                 this._rows[key]={pct,fill,timer,title,name};
             }
-            const error=label('','aum-error'); error.clutter_text.line_wrap=true; error.hide(); section.add_child(error); this[`_error_${group==='Codex'?'codex':'claude'}`]=error;
+            const error=label('','aum-error'); error.clutter_text.line_wrap=true; error.hide(); section.add_child(error); this[`_error_${provider}`]=error;
+            // The separator belongs to its provider: hide both together.
+            section.add_child(new St.Widget({style_class:'aum-divider',height:1,x_expand:true,x_align:Clutter.ActorAlign.FILL}));
         }
-        this._empty=label(this._tr('installCli'),'aum-muted'); this._empty.clutter_text.line_wrap=true; this._empty.hide(); box.add_child(this._empty);
+        this._empty=new St.BoxLayout({vertical:true,style_class:'aum-empty',x_expand:true});
+        this._empty.add_child(this._controlIcon('empty-monitor',48));
+        this._emptyTitle=label(this._tr('noAi'),'aum-empty-title');
+        this._emptyTitle.x_align=Clutter.ActorAlign.CENTER;this._empty.add_child(this._emptyTitle);
+        this._emptyMessage=label(this._tr('installCli'),'aum-muted');
+        this._emptyMessage.clutter_text.line_wrap=true;
+        this._emptyMessage.clutter_text.set_line_alignment(1); // Pango.Alignment.CENTER
+        this._emptyMessage.x_align=Clutter.ActorAlign.CENTER;this._empty.add_child(this._emptyMessage);
+        this._empty.hide();box.add_child(this._empty);
         this._footer=label(this._tr('querying'),'aum-muted'); box.add_child(this._footer);
         this._button.menu.addMenuItem(card);
-        this._refreshItem=this._button.menu.addAction(this._tr('refresh'),()=>this._refresh());
-        this._themeMenu=new PopupMenu.PopupSubMenuMenuItem(this._tr('theme'));
-        this._button.menu.addMenuItem(this._themeMenu);
-        this._themeItems={};
-        for (const mode of THEMES)
-            this._themeItems[mode]=this._themeMenu.menu.addAction(this._tr(mode),()=>this._setTheme(mode));
-        this._languageMenu=new PopupMenu.PopupSubMenuMenuItem(this._tr('language'));
-        this._button.menu.addMenuItem(this._languageMenu);
-        for (const lang of ['ko','en'])
-            this._languageMenu.menu.addAction(LANGUAGES[lang],()=>this._setLanguage(lang));
+        this._button.menu.connect('open-state-changed',(_menu,open)=>{if(!open)this._hideChoices();});
         this._interfaceSettings=new Gio.Settings({schema_id:'org.gnome.desktop.interface'});
         this._themeMode='auto';
         try {
@@ -105,12 +128,35 @@ export default class UsageMonitor extends Extension {
     }
     _applyLanguage() {
         for (const ui of Object.values(this._rows)) ui.title.text=this._tr(ui.name);
-        this._empty.text=this._tr('installCli');
-        this._refreshItem.label.text=this._tr('refresh');
-        for (const mode of THEMES) this._themeItems[mode].label.text=this._tr(mode);
-        this._themeMenu.label.text=this._tr('theme')+': '+this._tr(this._themeMode);
-        this._languageMenu.label.text=this._tr('language')+': '+LANGUAGES[this._language];
-        this._render();
+        this._emptyTitle.text=this._tr('noAi');
+        this._emptyMessage.text=this._tr('installCli');
+        this._refreshButton.accessible_name=this._tr('refresh');
+        this._languageButton.accessible_name=this._tr('language')+': '+LANGUAGES[this._language];
+        this._themeButton.accessible_name=this._tr('theme')+': '+this._tr(this._themeMode);
+        for (const mode of THEMES) this._themeItems[mode].label=this._tr(mode);
+        this._updateSelections();this._render();
+    }
+    _controlIcon(name,size=16) {
+        return new St.Icon({gicon:new Gio.FileIcon({file:Gio.File.new_for_path(`${this.path}/icons/${name}-symbolic.svg`)}),icon_size:size,x_align:Clutter.ActorAlign.CENTER,y_align:Clutter.ActorAlign.CENTER});
+    }
+    _iconButton(icon,key,callback) {
+        const button=new St.Button({style_class:'aum-icon-button',can_focus:true,accessible_name:this._tr(key),child:this._controlIcon(icon)});
+        button.connect('clicked',callback);return button;
+    }
+    _hideChoices() {
+        for(const row of Object.values(this._choiceRows||{})) row.hide();
+    }
+    _toggleChoices(kind) {
+        const row=this._choiceRows[kind];const wasVisible=row.visible;
+        this._hideChoices();if(!wasVisible)row.show();
+    }
+    _updateSelections() {
+        for(const [key,button] of Object.entries(this._themeItems)) {
+            if(key===this._themeMode)button.add_style_class_name('aum-selected');else button.remove_style_class_name('aum-selected');
+        }
+        for(const [key,button] of Object.entries(this._languageItems)) {
+            if(key===this._language)button.add_style_class_name('aum-selected');else button.remove_style_class_name('aum-selected');
+        }
     }
     _providerIcon(name,size) {
         return new St.Icon({gicon:new Gio.FileIcon({file:Gio.File.new_for_path(`${this.path}/icons/${name}.svg`)}),icon_size:size,y_align:Clutter.ActorAlign.CENTER});
@@ -129,8 +175,9 @@ export default class UsageMonitor extends Extension {
         const actor=this._button.menu.actor;
         actor.remove_style_class_name('aum-dark'); actor.remove_style_class_name('aum-light');
         actor.add_style_class_name(this._dark?'aum-dark':'aum-light');
-        this._themeMenu.label.text=this._tr('theme')+': '+this._tr(this._themeMode);
-        this._render();
+        this._themeButton.set_child(this._controlIcon(this._themeMode==='auto'?'system-theme':this._dark?'moon':'sun'));
+        this._themeButton.accessible_name=this._tr('theme')+': '+this._tr(this._themeMode);
+        this._updateSelections();this._render();
     }
     _refresh() {
         if (!this._active || this._process || Date.now()-this._lastRequest<30000) return;
@@ -157,12 +204,13 @@ export default class UsageMonitor extends Extension {
         if (!this._active) return;
         const data=this._data; const compact=k=>{const r=data.rows?.[k];return valid(r)&&!expired(r)?`${r.stale?'~':''}${Math.round(r.remaining)}%`:'—';};
         const known=Boolean(data.providers);
-        const codex=!known || data.providers.codex===true;
-        const claude=!known || data.providers.claude===true;
+        const codex=known && data.providers.codex===true;
+        const claude=known && data.providers.claude===true;
         this._panelGroups.codex.visible=codex; this._panelGroups.claude.visible=claude;
         this._groups.codex.visible=codex; this._groups.claude.visible=claude;
         this._panelDivider.visible=codex&&claude;
-        this._panelEmpty.visible=!codex&&!claude; this._empty.visible=!codex&&!claude;
+        this._panelEmpty.visible=!codex&&!claude; this._empty.visible=known&&!codex&&!claude;
+        this._footer.x_align=known&&!codex&&!claude?Clutter.ActorAlign.CENTER:Clutter.ActorAlign.START;
         this._panelDemo.visible=Boolean(data.demo);
         this._panelCodex.text=compact('codex_5h'); this._panelClaude.text=compact('claude_5h');
         for (const [key, ui] of Object.entries(this._rows)) {
@@ -170,7 +218,7 @@ export default class UsageMonitor extends Extension {
             ui.pct.text=ok&&!past?`${row.stale?'~':''}${row.remaining}${this._tr('remaining')}`:'—';
             ui.pct.set_style(`color: ${ok&&!past?color(row.remaining,this._dark):(this._dark?'#aaaaaa':'#666666')};`);
             ui.fill.width=ok&&!past?Math.round(WIDTH*row.remaining/100):0;
-            ui.fill.set_style(`background-color: ${ok?color(row.remaining,this._dark):'transparent'}; border-radius: 8px;`);
+            ui.fill.set_style(`background-color: ${ok?color(row.remaining,this._dark):'transparent'}; border-radius: 4px;`);
             ui.timer.text=ok?`${row.stale?this._tr('stale'):''}${!Number.isFinite(row.reset_at) && row.active === false ? this._tr('inactive') : countdown(row.reset_at,this._language)}`:this._tr('noData');
         }
         for (const provider of ['codex','claude']) {
@@ -178,7 +226,7 @@ export default class UsageMonitor extends Extension {
             e.text=translateError(this._language,msg); e.visible=Boolean(msg);
         }
         const time=data.checked_at?new Date(data.checked_at*1000).toLocaleTimeString(this._language==='ko'?'ko-KR':'en-US'):'—';
-        this._footer.text=this._process?this._tr('querying'):this._failed?this._tr('failed'):!codex&&!claude?this._tr('noCli'):`${data.demo?this._tr('demo'):''}${this._tr('updated')} ${time} · ${this._tr('interval')}`;
+        this._footer.text=this._process?this._tr('querying'):this._failed?this._tr('failed'):known&&!codex&&!claude?this._tr('noCli'):`${data.demo?this._tr('demo'):''}${this._tr('updated')} ${time} · ${this._tr('interval')}`;
     }
     disable() {
         this._active=false;

@@ -1,46 +1,54 @@
 .aum-panel { spacing: 5px; }
 .aum-panel-divider { color: rgba(255,255,255,0.55); padding: 0 4px; }
-.aum-card { spacing: 8px; padding: 3px 5px; min-width: 300px; }
+
+/* One rounded outer surface. The provider sections stay completely flat. */
+.aum-dark, .aum-light {
+    -arrow-background-color: transparent;
+    -arrow-border-color: transparent;
+    -arrow-border-width: 0;
+    -arrow-border-radius: 0;
+}
+.aum-dark .aum-surface, .aum-light .aum-surface {
+    border-radius: 14px;
+    border-width: 1px;
+    padding: 10px;
+}
+.aum-dark .aum-surface { background-color: #242424; border-color: #515151; color: #f1f1f1; }
+.aum-light .aum-surface { background-color: #f7f7f7; border-color: #d6d6d6; color: #242424; }
+.aum-dark .aum-body-item, .aum-light .aum-body-item {
+    background-color: transparent; border-radius: 0; padding: 6px; margin: 0;
+}
+.aum-card { spacing: 9px; min-width: 252px; }
+.aum-header { spacing: 3px; }
 .aum-title { font-size: 15px; font-weight: bold; }
-.aum-group { font-size: 14px; font-weight: bold; padding-top: 6px; spacing: 7px; }
+.aum-group { font-size: 14px; font-weight: normal; spacing: 7px; }
+.aum-section { spacing: 8px; }
 .aum-row { spacing: 5px; padding-bottom: 3px; }
 .aum-percent { font-weight: bold; }
-.aum-track { background-color: rgba(128,128,128,0.30); border-radius: 8px; }
+.aum-track { background-color: rgba(128,128,128,0.30); border-radius: 4px; }
+.aum-divider { height: 1px; margin-top: 3px; }
+.aum-dark .aum-divider { background-color: rgba(255,255,255,0.20); }
+.aum-light .aum-divider { background-color: rgba(0,0,0,0.16); }
 .aum-muted { font-size: 11px; }
 .aum-error { font-size: 10px; }
-.aum-dark { color: #f1f1f1; -arrow-background-color: #242424; -arrow-border-color: #444444; }
-.aum-light { color: #242424; -arrow-background-color: #f7f7f7; -arrow-border-color: #d6d6d6; }
-.aum-dark .popup-menu-content, .aum-dark .popup-sub-menu { color: #f1f1f1; background-color: #242424; }
-.aum-light .popup-menu-content, .aum-light .popup-sub-menu { color: #242424; background-color: #f7f7f7; }
-.aum-dark .popup-menu-item { color: #f1f1f1; }
-.aum-light .popup-menu-item { color: #242424; }
-.aum-dark .popup-menu-item:active, .aum-dark .popup-menu-item:hover, .aum-dark .popup-menu-item:focus, .aum-dark .popup-menu-item:checked { background-color: #404040; color: #ffffff; }
-.aum-light .popup-menu-item:active, .aum-light .popup-menu-item:hover, .aum-light .popup-menu-item:focus, .aum-light .popup-menu-item:checked { background-color: #e1e3e6; color: #161616; }
+.aum-error, .aum-muted { max-width: 252px; }
 .aum-dark .aum-muted { color: #b2b2b2; }
 .aum-light .aum-muted { color: #686868; }
 .aum-dark .aum-error { color: #eeaa66; }
 .aum-light .aum-error { color: #a04b13; }
-
-.aum-section { spacing: 8px; }
-
-/* Rounded surfaces, scoped to this extension's popup. */
-.aum-dark, .aum-light {
-    -arrow-border-radius: 20px;
-}
-.aum-dark .popup-menu-content, .aum-light .popup-menu-content,
-.aum-dark.popup-menu-content, .aum-light.popup-menu-content {
-    border-radius: 20px;
-}
-.aum-dark .popup-menu-item, .aum-light .popup-menu-item {
-    border-radius: 12px;
-}
-.aum-dark .popup-sub-menu, .aum-light .popup-sub-menu {
-    border-radius: 14px;
-}
-.aum-dark .aum-section, .aum-light .aum-section {
-    border-radius: 14px;
-    padding: 8px 10px;
-}
-.aum-dark .aum-section { background-color: rgba(255,255,255,0.045); }
-.aum-light .aum-section { background-color: rgba(0,0,0,0.035); }
-.aum-error, .aum-muted { max-width: 300px; }
+.aum-icon-button { padding: 4px; }
+.aum-icon-button, .aum-choice { background-color: transparent; border-radius: 0; }
+.aum-choices { spacing: 4px; padding: 2px 0; }
+.aum-choice { padding: 5px 4px; font-size: 11px; }
+.aum-dark .aum-icon-button, .aum-dark .aum-choice { color: #f1f1f1; }
+.aum-light .aum-icon-button, .aum-light .aum-choice { color: #242424; }
+.aum-dark .aum-icon-button:hover, .aum-dark .aum-icon-button:focus,
+.aum-dark .aum-choice:hover, .aum-dark .aum-choice:focus, .aum-dark .aum-selected { background-color: #404040; }
+.aum-light .aum-icon-button:hover, .aum-light .aum-icon-button:focus,
+.aum-light .aum-choice:hover, .aum-light .aum-choice:focus, .aum-light .aum-selected { background-color: #e1e3e6; }
+.aum-empty { spacing: 10px; padding: 28px 0; }
+.aum-empty-title { font-size: 15px; font-weight: bold; }
+.aum-dark .aum-empty { color: #b2b2b2; }
+.aum-light .aum-empty { color: #686868; }
+.aum-dark .aum-empty-title { color: #f1f1f1; }
+.aum-light .aum-empty-title { color: #242424; }
