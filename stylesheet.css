@@ -36,16 +36,19 @@
 .aum-light .aum-muted { color: #686868; }
 .aum-dark .aum-error { color: #eeaa66; }
 .aum-light .aum-error { color: #a04b13; }
-.aum-icon-button { padding: 4px; }
-.aum-icon-button, .aum-choice { background-color: transparent; border-radius: 0; }
-.aum-choices { spacing: 4px; padding: 2px 0; }
-.aum-choice { padding: 5px 4px; font-size: 11px; }
-.aum-dark .aum-icon-button, .aum-dark .aum-choice { color: #f1f1f1; }
-.aum-light .aum-icon-button, .aum-light .aum-choice { color: #242424; }
-.aum-dark .aum-icon-button:hover, .aum-dark .aum-icon-button:focus,
-.aum-dark .aum-choice:hover, .aum-dark .aum-choice:focus, .aum-dark .aum-selected { background-color: #404040; }
-.aum-light .aum-icon-button:hover, .aum-light .aum-icon-button:focus,
-.aum-light .aum-choice:hover, .aum-light .aum-choice:focus, .aum-light .aum-selected { background-color: #e1e3e6; }
+.aum-icon-button { padding: 4px; background-color: transparent; border: 0; border-radius: 0; box-shadow: none; }
+.aum-icon-button:hover, .aum-icon-button:focus, .aum-icon-button:active {
+    background-color: transparent; border: 0; box-shadow: none;
+}
+.aum-control-image { -st-icon-style: regular; icon-shadow: none; }
+.aum-icon-button:hover .aum-control-image { opacity: 0.80; }
+.aum-icon-button:insensitive .aum-control-image { opacity: 0.45; }
+.aum-dark .aum-card, .aum-dark .aum-body-item, .aum-dark .aum-card StLabel { color: #f1f1f1; text-shadow: none; }
+.aum-light .aum-card, .aum-light .aum-body-item, .aum-light .aum-card StLabel { color: #242424; text-shadow: none; }
+.aum-dark .aum-card .aum-muted { color: #b2b2b2; }
+.aum-light .aum-card .aum-muted { color: #686868; }
+.aum-dark .aum-card .aum-error { color: #eeaa66; }
+.aum-light .aum-card .aum-error { color: #a04b13; }
 .aum-empty { spacing: 10px; padding: 28px 0; }
 .aum-empty-title { font-size: 15px; font-weight: bold; }
 .aum-dark .aum-empty { color: #b2b2b2; }

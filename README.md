@@ -3,18 +3,20 @@
 > [!NOTE]
 > **한국어 사용자이신가요? [한국어 설치 및 사용 안내 바로가기 →](README.ko.md)**
 
-> GNOME Shell 46 · Ubuntu 24.04 LTS · v0.8
+> GNOME Shell 46 · Ubuntu 24.04 LTS · v0.9
 
 An independent, unofficial open-source project. Not affiliated with OpenAI or Anthropic.
 
 A lightweight GNOME Shell top-panel extension for Ubuntu 24.04. Monitor Codex and Claude Code subscription quotas (5-hour and weekly) and their reset countdowns. No separate login, API key or external Python packages are required.
 
-## What's new in v0.8
+## What's new in v0.9
 
 - Compact flat popup with a single rounded outer border and one separator below each detected AI provider.
 - Refresh, language and theme controls are now icon-only buttons in the header.
 - English and Korean UI, including errors, quota labels, countdowns, and theme controls.
-- System language is the default: Korean on Korean desktops, English on English desktops, and English for every other language. A manual override can be saved locally.
+- One-click theme and language toggles; matching the system automatically restores synchronization.
+- Full-color header icons, consistent weekly labels, and no manual refresh cooldown.
+- System language is the default: Korean on Korean desktops, English on English desktops, and English for every other language.
 - English is the main README, with the original Korean guide available through the link above.
 - Existing features remain unchanged: optional CLI detection, automatic refresh every minute, and light/dark/system themes.
 
@@ -123,7 +125,7 @@ gnome-extensions enable ai-usage-monitor@local
 gnome-extensions info ai-usage-monitor@local
 ```
 
-Click the provider icons and percentages in the top panel to see details and manually refresh. Usage is polled every minute and countdowns update every second. Manual refresh has a minimum interval of 30 seconds. CLI queries run in parallel. Values represent the percentage of subscription quota remaining, not literal token counts.
+Click the provider icons and percentages in the top panel to see details and manually refresh. Usage is polled every minute and countdowns update every second. Manual refresh can run again immediately after the previous query finishes. CLI queries run in parallel. Values represent the percentage of subscription quota remaining, not literal token counts.
 
 ## Updating
 
@@ -142,11 +144,11 @@ Existing users do not need to reinstall dependencies. Extract the new ZIP over t
 
 ## Theme and language
 
-In the top-right corner of the popup, click the **theme icon** to select System, Dark, or Light. System mode follows Ubuntu's color scheme and is the default. Your preference is saved to `~/.config/ai-usage-monitor/theme` (respecting XDG_CONFIG_HOME). The GNOME top panel itself retains its native theme. The refresh icon in the header manually queries usage. SVG logos are bundled locally; see `icons/NOTICE.md` for attribution.
+Click the **theme icon** in the top-right corner to toggle Light ↔ Dark. The first launch follows Ubuntu's color scheme. When the widget and system match, the widget follows subsequent system changes. When they differ, the widget preserves its own value until the system matches it again, at which point synchronization is restored automatically. The preference is saved to `~/.config/ai-usage-monitor/theme` (respecting XDG_CONFIG_HOME). The GNOME top panel retains its native theme. The refresh icon manually queries usage. SVG logos are bundled locally; see `icons/NOTICE.md` for attribution.
 
-Click the **language icon** in the top-right corner to select System, 한국어, or English. System is the default and follows the GNOME session language: Korean for Korean locales, English for English locales, and English for all unsupported locales. Manual choices override the system setting until you select System again. Changes take effect immediately without another query, and the selected mode is saved to `~/.config/ai-usage-monitor/language` (respecting XDG_CONFIG_HOME). System mode resolves the current session language each time the extension starts; log out and back in after changing the GNOME language.
+Click the **language icon** to toggle English ↔ 한국어. The same automatic synchronization rule applies to the effective GNOME session language (Korean for Korean locales, English otherwise). The widget changes immediately on a click; a GNOME session language change normally requires logging out and back in. Saved preferences are reconciled with the current session at startup and whenever the popup opens. The mode is stored in `~/.config/ai-usage-monitor/language` (respecting XDG_CONFIG_HOME).
 
-Usage queries are attempted every 60 seconds, without overlapping a previous query. Manual refresh is limited to one attempt per 30 seconds. Cached data and error messages are displayed when a server request fails.
+Usage queries are attempted every 60 seconds, without overlapping a previous query. There is no widget-imposed manual refresh cooldown; only simultaneous requests are blocked. Upstream CLI/server rate limits still apply. Cached data and error messages are displayed when a server request fails.
 
 ## UI demo mode
 
@@ -160,13 +162,15 @@ d=json.loads(p.read_text()); d['demo']=True; p.write_text(json.dumps(d,indent=2)
 PY
 ```
 
-Refresh after 30 seconds, or disable and re-enable the extension. The panel displays `DEMO`. Before using live data, change `True` to `False` and run the same command.
+Refresh after any in-flight query finishes, or disable and re-enable the extension. The panel displays `DEMO`. Before using live data, change `True` to `False` and run the same command.
 
 ## Project structure
 
 - `collector.py`: CLI JSON protocols, quota normalization, parallel queries and caching with the Python standard library.
 - `extension.js`: GJS panel, popup, asynchronous collection, timers and errors.
 - `i18n.js`: English/Korean UI translations and countdown formatting.
+- `preferences.js`: automatic synchronization and one-click toggles.
+- `test_preferences.mjs`: synchronization state transition tests.
 - `stylesheet.css`: rounded GNOME light/dark styles.
 - `metadata.json`: GNOME extension metadata.
 - `install.sh`, `uninstall.sh`: per-user installation/removal.
@@ -218,12 +222,13 @@ rm -rf -- "${XDG_CACHE_HOME:-$HOME/.cache}/ai-usage-monitor"
 
 ```bash
 python3 -m unittest -v test_collector test_environment
-node --test test_i18n.mjs
+node --test test_i18n.mjs test_preferences.mjs
 for script in install.sh uninstall.sh check_environment.sh; do
     bash -n "$script" || exit 1
 done
 node --input-type=module --check < extension.js
 node --input-type=module --check < i18n.js
+node --input-type=module --check < preferences.js
 ```
 
 The 10 original collector tests and 6 environment tests are included alongside the localization tests. See [GitHub Actions](../../actions) for CI results. Actual GNOME rendering and live account integration require separate verification.

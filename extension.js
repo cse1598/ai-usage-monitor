@@ -6,9 +6,11 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
-import {LANGUAGES, LANGUAGE_MODES, resolveLanguage, translate, translateError, countdown} from './i18n.js';
+import {LANGUAGES, LANGUAGE_MODES, defaultLanguage, translate, translateError, countdown} from './i18n.js';
 
-const GROUPS = [['Codex', [['codex_5h','fiveHour'],['codex_week','weekly']]], ['Claude Code', [['claude_5h','fiveHour'],['claude_week','weeklyAll']]]];
+import {syncMode, toggleMode} from './preferences.js';
+
+const GROUPS = [['Codex', [['codex_5h','fiveHour'],['codex_week','weekly']]], ['Claude Code', [['claude_5h','fiveHour'],['claude_week','weekly']]]];
 const WIDTH = 252;
 const POLL_SECONDS = 60;
 const THEMES = ['auto','dark','light'];
@@ -21,14 +23,14 @@ function label(text, style_class='') {return new St.Label({text,style_class,y_al
 
 export default class UsageMonitor extends Extension {
     enable() {
-        this._active=true; this._data={rows:{},errors:{}}; this._rows={}; this._groups={}; this._panelGroups={}; this._lastRequest=0; this._failed=false;
+        this._active=true; this._data={rows:{},errors:{}}; this._rows={}; this._groups={}; this._panelGroups={}; this._failed=false; this._process=null;
         this._languageMode='auto';
         try {
             const [ok,bytes]=GLib.file_get_contents(LANGUAGE_PATH);
             const saved=new TextDecoder().decode(bytes).trim();
             if(ok && LANGUAGE_MODES.includes(saved)) this._languageMode=saved;
         } catch(e) { /* first installation */ }
-        this._language=resolveLanguage(this._languageMode,GLib.get_language_names()[0]);
+        this._syncLanguage();
         this._button=new PanelMenu.Button(0.5,'AI Usage Monitor',false);
         this._button.menu.box.add_style_class_name('aum-surface');
         const panel=new St.BoxLayout({style_class:'aum-panel',y_align:Clutter.ActorAlign.CENTER});
@@ -44,31 +46,18 @@ export default class UsageMonitor extends Extension {
             }
         }
         this._panelEmpty=new St.BoxLayout({style_class:'aum-panel',y_align:Clutter.ActorAlign.CENTER});
-        this._panelEmpty.add_child(this._controlIcon('sparkle',16)); this._panelEmpty.add_child(label('AI'));
+        this._panelEmpty.add_child(this._controlIcon('sparkle',16,'dark')); this._panelEmpty.add_child(label('AI'));
         this._panelEmpty.hide(); panel.add_child(this._panelEmpty);
         this._button.add_child(panel);
         const card=new PopupMenu.PopupBaseMenuItem({reactive:false,can_focus:false,style_class:'aum-body-item'});
         const box=new St.BoxLayout({vertical:true,style_class:'aum-card',x_expand:true}); card.add_child(box);
         const top=new St.BoxLayout({style_class:'aum-header',x_expand:true});
         const heading=label('AI Usage Monitor','aum-title'); heading.x_expand=true; top.add_child(heading);
-        this._refreshButton=this._iconButton('refresh','refresh',()=>{this._hideChoices();this._refresh();});
-        this._languageButton=this._iconButton('language','language',()=>this._toggleChoices('language'));
-        this._themeButton=this._iconButton('moon','theme',()=>this._toggleChoices('theme'));
+        this._refreshButton=this._iconButton('refresh','refresh',()=>this._refresh());
+        this._languageButton=this._iconButton('language','language',()=>this._toggleLanguage());
+        this._themeButton=this._iconButton('moon','theme',()=>this._toggleTheme());
         for(const button of [this._refreshButton,this._languageButton,this._themeButton]) top.add_child(button);
         box.add_child(top);
-        this._choiceRows={}; this._themeItems={}; this._languageItems={};
-        for(const kind of ['language','theme']) {
-            const choices=new St.BoxLayout({style_class:'aum-choices',x_expand:true});
-            const values=kind==='language'?LANGUAGE_MODES:THEMES;
-            for(const value of values) {
-                const text=kind==='language'&&value!=='auto'?LANGUAGES[value]:this._tr(value);
-                const choice=new St.Button({label:text,style_class:'aum-choice',can_focus:true,x_expand:true});
-                choice.connect('clicked',()=>{if(kind==='language') this._setLanguage(value);else this._setTheme(value);this._hideChoices();});
-                choices.add_child(choice);
-                (kind==='language'?this._languageItems:this._themeItems)[value]=choice;
-            }
-            choices.hide();this._choiceRows[kind]=choices;box.add_child(choices);
-        }
         for (const [group, items] of GROUPS) {
             const provider=group==='Codex'?'codex':'claude';
             const section=new St.BoxLayout({vertical:true,style_class:'aum-section'});
@@ -91,7 +80,8 @@ export default class UsageMonitor extends Extension {
             section.add_child(new St.Widget({style_class:'aum-divider',height:1,x_expand:true,x_align:Clutter.ActorAlign.FILL}));
         }
         this._empty=new St.BoxLayout({vertical:true,style_class:'aum-empty',x_expand:true});
-        this._empty.add_child(this._controlIcon('empty-monitor',48));
+        this._emptyIcon=this._controlIcon('empty-monitor',48);
+        this._empty.add_child(this._emptyIcon);
         this._emptyTitle=label(this._tr('noAi'),'aum-empty-title');
         this._emptyTitle.x_align=Clutter.ActorAlign.CENTER;this._empty.add_child(this._emptyTitle);
         this._emptyMessage=label(this._tr('installCli'),'aum-muted');
@@ -101,7 +91,7 @@ export default class UsageMonitor extends Extension {
         this._empty.hide();box.add_child(this._empty);
         this._footer=label(this._tr('querying'),'aum-muted'); box.add_child(this._footer);
         this._button.menu.addMenuItem(card);
-        this._button.menu.connect('open-state-changed',(_menu,open)=>{if(!open)this._hideChoices();});
+        this._button.menu.connect('open-state-changed',(_menu,open)=>{if(open){this._syncLanguage();this._applyLanguage();}});
         this._interfaceSettings=new Gio.Settings({schema_id:'org.gnome.desktop.interface'});
         this._themeMode='auto';
         try {
@@ -118,14 +108,28 @@ export default class UsageMonitor extends Extension {
         this._refresh();
     }
     _tr(key) { return translate(this._language,key); }
-    _setLanguage(language) {
-        if(!LANGUAGE_MODES.includes(language)) return;
-        this._languageMode=language;
-        this._language=resolveLanguage(language,GLib.get_language_names()[0]);
+    _saveMode(path, mode) {
         try {
-            GLib.mkdir_with_parents(GLib.path_get_dirname(LANGUAGE_PATH),0o700);
-            GLib.file_set_contents(LANGUAGE_PATH,language+'\n');
-        } catch(e) { console.error('AI Usage Monitor: language save failed'); }
+            GLib.mkdir_with_parents(GLib.path_get_dirname(path),0o700);
+            GLib.file_set_contents(path,mode+'\n');
+        } catch(e) { console.error('AI Usage Monitor: preference save failed'); }
+    }
+    _systemLanguage() { return defaultLanguage(GLib.get_language_names()[0]); }
+    _systemTheme() {
+        return this._interfaceSettings.get_string('color-scheme')==='prefer-dark'?'dark':'light';
+    }
+    _syncLanguage() {
+        const state=syncMode(this._languageMode,this._systemLanguage());
+        if(state.mode!==this._languageMode) this._saveMode(LANGUAGE_PATH,state.mode);
+        this._languageMode=state.mode;
+        this._language=state.value;
+    }
+    _toggleLanguage() {
+        this._syncLanguage();
+        const state=toggleMode(this._language,this._systemLanguage(),'ko','en');
+        this._languageMode=state.mode;
+        this._language=state.value;
+        this._saveMode(LANGUAGE_PATH,state.mode);
         this._applyLanguage();
     }
     _applyLanguage() {
@@ -133,62 +137,51 @@ export default class UsageMonitor extends Extension {
         this._emptyTitle.text=this._tr('noAi');
         this._emptyMessage.text=this._tr('installCli');
         this._refreshButton.accessible_name=this._tr('refresh');
-        this._languageButton.accessible_name=this._tr('language')+': '+(this._languageMode==='auto'?this._tr('auto')+' ('+LANGUAGES[this._language]+')':LANGUAGES[this._language]);
-        this._languageItems.auto.label=this._tr('auto');
-        this._themeButton.accessible_name=this._tr('theme')+': '+this._tr(this._themeMode);
-        for (const mode of THEMES) this._themeItems[mode].label=this._tr(mode);
-        this._updateSelections();this._render();
+        this._languageButton.accessible_name=this._tr('language')+': '+LANGUAGES[this._language]+(this._languageMode==='auto'?' ('+this._tr('auto')+')':'');
+        this._themeButton.accessible_name=this._tr('theme')+': '+this._tr(this._dark?'dark':'light')+(this._themeMode==='auto'?' ('+this._tr('auto')+')':'');
+        this._render();
     }
-    _controlIcon(name,size=16) {
-        return new St.Icon({gicon:new Gio.FileIcon({file:Gio.File.new_for_path(`${this.path}/icons/${name}-symbolic.svg`)}),icon_size:size,x_align:Clutter.ActorAlign.CENTER,y_align:Clutter.ActorAlign.CENTER});
+    _iconFile(name,tone) {
+        return new Gio.FileIcon({file:Gio.File.new_for_path(`${this.path}/icons/${name}-${tone}.svg`)});
+    }
+    _controlIcon(name,size=18,tone=this._dark===false?'light':'dark') {
+        return new St.Icon({gicon:this._iconFile(name,tone),icon_size:size,style_class:'aum-control-image',x_align:Clutter.ActorAlign.CENTER,y_align:Clutter.ActorAlign.CENTER});
     }
     _iconButton(icon,key,callback) {
         const button=new St.Button({style_class:'aum-icon-button',can_focus:true,accessible_name:this._tr(key),child:this._controlIcon(icon)});
         button.connect('clicked',callback);return button;
     }
-    _hideChoices() {
-        for(const row of Object.values(this._choiceRows||{})) row.hide();
-    }
-    _toggleChoices(kind) {
-        const row=this._choiceRows[kind];const wasVisible=row.visible;
-        this._hideChoices();if(!wasVisible)row.show();
-    }
-    _updateSelections() {
-        for(const [key,button] of Object.entries(this._themeItems)) {
-            if(key===this._themeMode)button.add_style_class_name('aum-selected');else button.remove_style_class_name('aum-selected');
-        }
-        for(const [key,button] of Object.entries(this._languageItems)) {
-            if(key===this._languageMode)button.add_style_class_name('aum-selected');else button.remove_style_class_name('aum-selected');
-        }
-    }
     _providerIcon(name,size) {
         return new St.Icon({gicon:new Gio.FileIcon({file:Gio.File.new_for_path(`${this.path}/icons/${name}.svg`)}),icon_size:size,y_align:Clutter.ActorAlign.CENTER});
     }
-    _setTheme(mode) {
-        if(!THEMES.includes(mode)) return;
-        this._themeMode=mode;
-        try {
-            GLib.mkdir_with_parents(GLib.path_get_dirname(THEME_PATH),0o700);
-            GLib.file_set_contents(THEME_PATH,`${mode}\n`);
-        } catch(e) { console.error(`AI Usage Monitor: theme save failed: ${e.message}`); }
+    _toggleTheme() {
+        const state=toggleMode(this._dark?'dark':'light',this._systemTheme(),'dark','light');
+        this._themeMode=state.mode;
+        this._saveMode(THEME_PATH,state.mode);
         this._applyTheme();
     }
     _applyTheme() {
-        this._dark=this._themeMode==='dark'||(this._themeMode==='auto'&&this._interfaceSettings.get_string('color-scheme')==='prefer-dark');
+        const state=syncMode(this._themeMode,this._systemTheme());
+        if(state.mode!==this._themeMode) this._saveMode(THEME_PATH,state.mode);
+        this._themeMode=state.mode;
+        this._dark=state.value==='dark';
         const actor=this._button.menu.actor;
         actor.remove_style_class_name('aum-dark'); actor.remove_style_class_name('aum-light');
         actor.add_style_class_name(this._dark?'aum-dark':'aum-light');
-        this._themeButton.set_child(this._controlIcon(this._themeMode==='auto'?'system-theme':this._dark?'moon':'sun'));
-        this._themeButton.accessible_name=this._tr('theme')+': '+this._tr(this._themeMode);
-        this._updateSelections();this._render();
+        const tone=this._dark?'dark':'light';
+        this._refreshButton.set_child(this._controlIcon('refresh',18,tone));
+        this._languageButton.set_child(this._controlIcon('language',18,tone));
+        this._themeButton.set_child(this._controlIcon(this._dark?'moon':'sun',18,tone));
+        this._emptyIcon.gicon=this._iconFile('empty-monitor',tone);
+        this._applyLanguage();
     }
     _refresh() {
-        if (!this._active || this._process || Date.now()-this._lastRequest<30000) return;
-        this._lastRequest=Date.now();
+        if (!this._active || this._process) return;
         this._footer.text=this._tr('querying');
         try {
             const proc=Gio.Subprocess.new(['/usr/bin/python3',`${this.path}/collector.py`],Gio.SubprocessFlags.STDOUT_PIPE|Gio.SubprocessFlags.STDERR_PIPE);
             this._process=proc;
+            this._refreshButton.reactive=false;
             proc.communicate_utf8_async(null,null,(p,res)=>{
                 try {
                     const [,output]=p.communicate_utf8_finish(res);
@@ -198,10 +191,10 @@ export default class UsageMonitor extends Extension {
                 } catch(e) {
                     if (this._active && this._process===p) {this._failed=true; for (const row of Object.values(this._data.rows||{})) if (row) row.stale=true;}
                 } finally {
-                    if (this._active && this._process===p) {this._process=null;this._render();}
+                    if (this._active && this._process===p) {this._process=null;this._refreshButton.reactive=true;this._render();}
                 }
             });
-        } catch(e) {this._process=null;this._failed=true;this._render();}
+        } catch(e) {this._process=null;this._refreshButton.reactive=true;this._failed=true;this._render();}
     }
     _render() {
         if (!this._active) return;

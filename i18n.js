@@ -4,7 +4,7 @@ export const LANGUAGE_MODES = Object.freeze(['auto', 'ko', 'en']);
 
 const STRINGS = {
     ko: {
-        fiveHour: '5시간', weekly: '주간', weeklyAll: '주간 전체',
+        fiveHour: '5시간', weekly: '주간', weeklyAll: '주간',
         remaining: '% 남음', refresh: '지금 새로고침',
         theme: '테마', auto: '시스템 설정', dark: '다크', light: '라이트',
         language: '언어', querying: '사용량 조회 중…',
@@ -19,7 +19,7 @@ const STRINGS = {
         day: '일 ', genericError: 'CLI 실행/응답 오류'
     },
     en: {
-        fiveHour: '5-hour', weekly: 'Weekly', weeklyAll: 'Weekly (all)',
+        fiveHour: '5-hour', weekly: 'Weekly', weeklyAll: 'Weekly',
         remaining: '% left', refresh: 'Refresh now',
         theme: 'Theme', auto: 'System', dark: 'Dark', light: 'Light',
         language: 'Language', querying: 'Checking usage…',
