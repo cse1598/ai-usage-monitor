@@ -3,7 +3,7 @@
 > [!NOTE]
 > **한국어 사용자이신가요? [한국어 설치 및 사용 안내 바로가기 →](README.ko.md)**
 
-> GNOME Shell 46 · Ubuntu 24.04 LTS · v0.12
+> GNOME Shell 46 · Ubuntu 24.04 LTS · v1.0.0
 
 An independent, unofficial open-source project. Not affiliated with OpenAI or Anthropic.
 
@@ -17,19 +17,15 @@ A lightweight GNOME Shell top-panel extension for Ubuntu 24.04. Monitor Codex an
 
 <p align="center"><em>Actual desktop screenshot (English, dark mode). The percentages and countdowns are captured at one moment in time.</em></p>
 
-## What's new in v0.12
+## Features
 
-- Organized repository layout: runtime files under `extension/`, tests under `tests/`, and documentation images under `docs/`.
-- Removed unused legacy symbolic icons; runtime behavior is unchanged.
-- Compact flat popup with a single rounded outer border and one separator below each detected AI provider.
-- Refresh, language and theme controls are now icon-only buttons in the header.
-- English and Korean UI, including errors, quota labels, countdowns, and theme controls.
-- One-click theme and language toggles; matching the system automatically restores synchronization.
-- Thin, rounded outline header icons with theme-specific colors and no icon shadows, consistent weekly labels, and no manual refresh cooldown.
-- Every manual or automatic query refreshes reset timestamps as well as usage; the countdowns show a loading message until the response arrives.
-- System language is the default: Korean on Korean desktops, English on English desktops, and English for every other language.
-- English is the main README, with the original Korean guide available through the link above.
-- Existing features remain unchanged: optional CLI detection, automatic refresh every minute, and light/dark/system themes.
+- Monitor Codex and Claude Code 5-hour and weekly subscription quotas and reset countdowns.
+- Automatically detect the installed CLI applications; either or both are optional.
+- Refresh usage and reset timestamps every minute, or manually as soon as the current query completes.
+- Update countdowns every second and display cached values clearly when queries fail.
+- Switch between English and Korean, or Light and Dark, using compact header icons.
+- Follow the system theme and language by default; automatically resynchronize when the widget and system match.
+- Keep usage data and preferences local, with no separate login or external Python dependencies.
 
 ## Requirements and compatibility
 
@@ -151,7 +147,7 @@ Log out and back in, then run `gnome-extensions enable ai-usage-monitor@local`.
 
 ### Updating from a ZIP
 
-Existing users do not need to reinstall dependencies. Extract the new ZIP over the existing source directory, run `bash install.sh`, log out and back in, then enable the extension again. Icons and the translation module are copied automatically.
+Existing users do not need to reinstall dependencies. Extract the new ZIP into a clean source directory to avoid retaining obsolete files, run `bash install.sh`, log out and back in, then enable the extension again. Existing widget settings and cache are preserved.
 
 ## Theme and language
 

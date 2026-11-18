@@ -14,6 +14,7 @@ install -d "$dest/icons"
 for name in empty-monitor language moon refresh sparkle sun system-theme; do
     rm -f -- "$dest/icons/$name-symbolic.svg"
 done
+rm -f -- "$dest/icons/sparkle-light.svg"
 install -m 644 extension/icons/codex.svg extension/icons/claude-code.svg extension/icons/*-dark.svg extension/icons/*-light.svg extension/icons/NOTICE.md extension/icons/LICENSE "$dest/icons/"
 /usr/bin/python3 - "$conf/config.json" "$(command -v codex || true)" "$(command -v claude || true)" <<'PY'
 import json, pathlib,sys,os
