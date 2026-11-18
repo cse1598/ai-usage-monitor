@@ -144,7 +144,7 @@ export default class UsageMonitor extends Extension {
     _iconFile(name,tone) {
         return new Gio.FileIcon({file:Gio.File.new_for_path(`${this.path}/icons/${name}-${tone}.svg`)});
     }
-    _controlIcon(name,size=18,tone=this._dark===false?'light':'dark') {
+    _controlIcon(name,size=16,tone=this._dark===false?'light':'dark') {
         return new St.Icon({gicon:this._iconFile(name,tone),icon_size:size,style_class:'aum-control-image',x_align:Clutter.ActorAlign.CENTER,y_align:Clutter.ActorAlign.CENTER});
     }
     _iconButton(icon,key,callback) {
@@ -169,9 +169,9 @@ export default class UsageMonitor extends Extension {
         actor.remove_style_class_name('aum-dark'); actor.remove_style_class_name('aum-light');
         actor.add_style_class_name(this._dark?'aum-dark':'aum-light');
         const tone=this._dark?'dark':'light';
-        this._refreshButton.set_child(this._controlIcon('refresh',18,tone));
-        this._languageButton.set_child(this._controlIcon('language',18,tone));
-        this._themeButton.set_child(this._controlIcon(this._dark?'moon':'sun',18,tone));
+        this._refreshButton.set_child(this._controlIcon('refresh',16,tone));
+        this._languageButton.set_child(this._controlIcon('language',16,tone));
+        this._themeButton.set_child(this._controlIcon(this._dark?'moon':'sun',16,tone));
         this._emptyIcon.gicon=this._iconFile('empty-monitor',tone);
         this._applyLanguage();
     }

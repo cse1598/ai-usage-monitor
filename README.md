@@ -3,19 +3,19 @@
 > [!NOTE]
 > **한국어 사용자이신가요? [한국어 설치 및 사용 안내 바로가기 →](README.ko.md)**
 
-> GNOME Shell 46 · Ubuntu 24.04 LTS · v0.10
+> GNOME Shell 46 · Ubuntu 24.04 LTS · v0.11
 
 An independent, unofficial open-source project. Not affiliated with OpenAI or Anthropic.
 
 A lightweight GNOME Shell top-panel extension for Ubuntu 24.04. Monitor Codex and Claude Code subscription quotas (5-hour and weekly) and their reset countdowns. No separate login, API key or external Python packages are required.
 
-## What's new in v0.10
+## What's new in v0.11
 
 - Compact flat popup with a single rounded outer border and one separator below each detected AI provider.
 - Refresh, language and theme controls are now icon-only buttons in the header.
 - English and Korean UI, including errors, quota labels, countdowns, and theme controls.
 - One-click theme and language toggles; matching the system automatically restores synchronization.
-- Full-color header icons, consistent weekly labels, and no manual refresh cooldown.
+- Thin, rounded outline header icons with theme-specific colors and no icon shadows, consistent weekly labels, and no manual refresh cooldown.
 - Every manual or automatic query refreshes reset timestamps as well as usage; the countdowns show a loading message until the response arrives.
 - System language is the default: Korean on Korean desktops, English on English desktops, and English for every other language.
 - English is the main README, with the original Korean guide available through the link above.
