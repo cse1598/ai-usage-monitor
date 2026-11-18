@@ -4,13 +4,29 @@ import assert from 'node:assert/strict';
 
 // Import the GJS module as an ES module without changing Node's package type.
 const source = readFileSync(new URL('./i18n.js', import.meta.url), 'utf8');
-const {defaultLanguage, translate, translateError, countdown} =
+const {defaultLanguage, resolveLanguage, LANGUAGE_MODES, translate, translateError, countdown} =
     await import('data:text/javascript;base64,' + Buffer.from(source).toString('base64'));
 
 test('locale default', () => {
     assert.equal(defaultLanguage('ko_KR.UTF-8'), 'ko');
     assert.equal(defaultLanguage('en_US'), 'en');
     assert.equal(defaultLanguage('fr_FR'), 'en');
+    assert.equal(defaultLanguage('ja_JP.UTF-8'), 'en');
+    assert.equal(defaultLanguage('zh_CN'), 'en');
+    assert.equal(defaultLanguage('en_GB.UTF-8'), 'en');
+    assert.equal(defaultLanguage('ko-KR'), 'ko');
+    assert.equal(defaultLanguage('ko@variant'), 'ko');
+    assert.equal(defaultLanguage('C'), 'en');
+    assert.equal(defaultLanguage(undefined), 'en');
+});
+test('system mode and saved manual preferences', () => {
+    assert.deepEqual([...LANGUAGE_MODES], ['auto','ko','en']);
+    assert.equal(resolveLanguage('auto','ko_KR'),'ko');
+    assert.equal(resolveLanguage('auto','en_US'),'en');
+    assert.equal(resolveLanguage('auto','de_DE'),'en');
+    assert.equal(resolveLanguage('en','ko_KR'),'en');
+    assert.equal(resolveLanguage('ko','en_US'),'ko');
+    assert.equal(resolveLanguage('invalid','ja_JP'),'en');
 });
 test('all interface keys have both translations', () => {
     for (const key of ['fiveHour','weekly','weeklyAll','remaining','refresh','theme','auto','dark','light','language','querying','noAi','installCli','noCli','noReset','expired','inactive','stale','noData','failed','demo','updated','interval','day','genericError']) {

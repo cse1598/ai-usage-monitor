@@ -1,5 +1,6 @@
 // Pure translation helpers shared by GJS and the Node.js tests.
 export const LANGUAGES = Object.freeze({ko: '한국어', en: 'English'});
+export const LANGUAGE_MODES = Object.freeze(['auto', 'ko', 'en']);
 
 const STRINGS = {
     ko: {
@@ -49,7 +50,11 @@ const ERROR_EN = {
 };
 
 export function defaultLanguage(locale) {
-    return /^ko(?:[_-]|$|\.)/i.test(locale || '') ? 'ko' : 'en';
+    return /^ko(?:[_\.\-@]|$)/i.test(locale || '') ? 'ko' : 'en';
+}
+
+export function resolveLanguage(mode, locale) {
+    return Object.hasOwn(LANGUAGES, mode) ? mode : defaultLanguage(locale);
 }
 
 export function translate(language, key) {

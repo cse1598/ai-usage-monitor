@@ -6,7 +6,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
-import {LANGUAGES, defaultLanguage, translate, translateError, countdown} from './i18n.js';
+import {LANGUAGES, LANGUAGE_MODES, resolveLanguage, translate, translateError, countdown} from './i18n.js';
 
 const GROUPS = [['Codex', [['codex_5h','fiveHour'],['codex_week','weekly']]], ['Claude Code', [['claude_5h','fiveHour'],['claude_week','weeklyAll']]]];
 const WIDTH = 252;
@@ -22,12 +22,13 @@ function label(text, style_class='') {return new St.Label({text,style_class,y_al
 export default class UsageMonitor extends Extension {
     enable() {
         this._active=true; this._data={rows:{},errors:{}}; this._rows={}; this._groups={}; this._panelGroups={}; this._lastRequest=0; this._failed=false;
-        this._language=defaultLanguage(GLib.get_language_names()[0]);
+        this._languageMode='auto';
         try {
             const [ok,bytes]=GLib.file_get_contents(LANGUAGE_PATH);
             const saved=new TextDecoder().decode(bytes).trim();
-            if(ok && Object.hasOwn(LANGUAGES,saved)) this._language=saved;
+            if(ok && LANGUAGE_MODES.includes(saved)) this._languageMode=saved;
         } catch(e) { /* first installation */ }
+        this._language=resolveLanguage(this._languageMode,GLib.get_language_names()[0]);
         this._button=new PanelMenu.Button(0.5,'AI Usage Monitor',false);
         this._button.menu.box.add_style_class_name('aum-surface');
         const panel=new St.BoxLayout({style_class:'aum-panel',y_align:Clutter.ActorAlign.CENTER});
@@ -58,9 +59,9 @@ export default class UsageMonitor extends Extension {
         this._choiceRows={}; this._themeItems={}; this._languageItems={};
         for(const kind of ['language','theme']) {
             const choices=new St.BoxLayout({style_class:'aum-choices',x_expand:true});
-            const values=kind==='language'?Object.keys(LANGUAGES):THEMES;
+            const values=kind==='language'?LANGUAGE_MODES:THEMES;
             for(const value of values) {
-                const text=kind==='language'?LANGUAGES[value]:this._tr(value);
+                const text=kind==='language'&&value!=='auto'?LANGUAGES[value]:this._tr(value);
                 const choice=new St.Button({label:text,style_class:'aum-choice',can_focus:true,x_expand:true});
                 choice.connect('clicked',()=>{if(kind==='language') this._setLanguage(value);else this._setTheme(value);this._hideChoices();});
                 choices.add_child(choice);
@@ -118,8 +119,9 @@ export default class UsageMonitor extends Extension {
     }
     _tr(key) { return translate(this._language,key); }
     _setLanguage(language) {
-        if(!Object.hasOwn(LANGUAGES,language)) return;
-        this._language=language;
+        if(!LANGUAGE_MODES.includes(language)) return;
+        this._languageMode=language;
+        this._language=resolveLanguage(language,GLib.get_language_names()[0]);
         try {
             GLib.mkdir_with_parents(GLib.path_get_dirname(LANGUAGE_PATH),0o700);
             GLib.file_set_contents(LANGUAGE_PATH,language+'\n');
@@ -131,7 +133,8 @@ export default class UsageMonitor extends Extension {
         this._emptyTitle.text=this._tr('noAi');
         this._emptyMessage.text=this._tr('installCli');
         this._refreshButton.accessible_name=this._tr('refresh');
-        this._languageButton.accessible_name=this._tr('language')+': '+LANGUAGES[this._language];
+        this._languageButton.accessible_name=this._tr('language')+': '+(this._languageMode==='auto'?this._tr('auto')+' ('+LANGUAGES[this._language]+')':LANGUAGES[this._language]);
+        this._languageItems.auto.label=this._tr('auto');
         this._themeButton.accessible_name=this._tr('theme')+': '+this._tr(this._themeMode);
         for (const mode of THEMES) this._themeItems[mode].label=this._tr(mode);
         this._updateSelections();this._render();
@@ -155,7 +158,7 @@ export default class UsageMonitor extends Extension {
             if(key===this._themeMode)button.add_style_class_name('aum-selected');else button.remove_style_class_name('aum-selected');
         }
         for(const [key,button] of Object.entries(this._languageItems)) {
-            if(key===this._language)button.add_style_class_name('aum-selected');else button.remove_style_class_name('aum-selected');
+            if(key===this._languageMode)button.add_style_class_name('aum-selected');else button.remove_style_class_name('aum-selected');
         }
     }
     _providerIcon(name,size) {
