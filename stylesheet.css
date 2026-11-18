@@ -1,0 +1,24 @@
+.aum-panel { spacing: 5px; }
+.aum-panel-divider { color: rgba(255,255,255,0.55); padding: 0 4px; }
+.aum-card { spacing: 8px; padding: 3px 5px; min-width: 252px; }
+.aum-title { font-size: 15px; font-weight: bold; }
+.aum-group { font-size: 14px; font-weight: bold; padding-top: 6px; spacing: 7px; }
+.aum-row { spacing: 5px; padding-bottom: 3px; }
+.aum-percent { font-weight: bold; }
+.aum-track { background-color: rgba(128,128,128,0.30); border-radius: 4px; }
+.aum-muted { font-size: 11px; }
+.aum-error { font-size: 10px; }
+.aum-dark { color: #f1f1f1; -arrow-background-color: #242424; -arrow-border-color: #444444; }
+.aum-light { color: #242424; -arrow-background-color: #f7f7f7; -arrow-border-color: #d6d6d6; }
+.aum-dark .popup-menu-content, .aum-dark .popup-sub-menu { color: #f1f1f1; background-color: #242424; }
+.aum-light .popup-menu-content, .aum-light .popup-sub-menu { color: #242424; background-color: #f7f7f7; }
+.aum-dark .popup-menu-item { color: #f1f1f1; }
+.aum-light .popup-menu-item { color: #242424; }
+.aum-dark .popup-menu-item:active, .aum-dark .popup-menu-item:hover, .aum-dark .popup-menu-item:focus, .aum-dark .popup-menu-item:checked { background-color: #404040; color: #ffffff; }
+.aum-light .popup-menu-item:active, .aum-light .popup-menu-item:hover, .aum-light .popup-menu-item:focus, .aum-light .popup-menu-item:checked { background-color: #e1e3e6; color: #161616; }
+.aum-dark .aum-muted { color: #b2b2b2; }
+.aum-light .aum-muted { color: #686868; }
+.aum-dark .aum-error { color: #eeaa66; }
+.aum-light .aum-error { color: #a04b13; }
+
+.aum-section { spacing: 8px; }

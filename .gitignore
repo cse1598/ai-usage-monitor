@@ -1,0 +1,23 @@
+# Python build/test artifacts
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+# Local editor and OS files
+.vscode/
+.idea/
+*.swp
+.DS_Store
+# Never commit local settings, credentials, or usage cache
+.env
+.env.*
+config.json
+usage.json
+credentials.json
+.credentials.json
+auth.json
+*.log
+# Generated distributions
+*.zip
