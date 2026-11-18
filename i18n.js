@@ -7,7 +7,7 @@ const STRINGS = {
         fiveHour: '5시간', weekly: '주간', weeklyAll: '주간',
         remaining: '% 남음', refresh: '지금 새로고침',
         theme: '테마', auto: '시스템 설정', dark: '다크', light: '라이트',
-        language: '언어', querying: '사용량 조회 중…',
+        language: '언어', querying: '사용량 조회 중…', resetQuerying: '초기화 시간 조회 중…',
         noAi: '설치된 AI가 없습니다',
         installCli: 'Codex 또는 Claude Code CLI를 설치하고 구독 계정으로 로그인하세요.',
         noCli: '1분마다 자동 탐색',
@@ -22,7 +22,7 @@ const STRINGS = {
         fiveHour: '5-hour', weekly: 'Weekly', weeklyAll: 'Weekly',
         remaining: '% left', refresh: 'Refresh now',
         theme: 'Theme', auto: 'System', dark: 'Dark', light: 'Light',
-        language: 'Language', querying: 'Checking usage…',
+        language: 'Language', querying: 'Checking usage…', resetQuerying: 'Checking reset time…',
         noAi: 'No AI CLI detected',
         installCli: 'Install Codex or Claude Code CLI and sign in to your subscription.',
         noCli: 'Automatic detection every minute',
@@ -80,4 +80,15 @@ export function countdown(t, language, now = Date.now()/1000) {
     const m = Math.floor(s / 60); s %= 60;
     const pad = n => String(n).padStart(2, '0');
     return `${d ? d + tr('day') : ''}${pad(h)}:${pad(m)}:${pad(s)}`;
+}
+
+// A successful response replaces the reset timestamp, including explicit null.
+// On failure, the collector marks the previous value as stale instead.
+export function resetLabel(row, language, querying = false, now = Date.now()/1000) {
+    const tr = key => translate(language, key);
+    if (querying) return tr('resetQuerying');
+    if (!row || !Number.isFinite(row.remaining)) return tr('noData');
+    const text = !Number.isFinite(row.reset_at) && row.active === false
+        ? tr('inactive') : countdown(row.reset_at, language, now);
+    return (row.stale ? tr('stale') : '') + text;
 }

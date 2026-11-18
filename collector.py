@@ -113,7 +113,7 @@ def query_codex(config):
     env = os.environ.copy(); env.pop('OPENAI_API_KEY', None)
     if config.get('path'): env['PATH'] = config['path']
     with Session([cli('codex', config), 'app-server'], env) as s:
-        s.send({'id': 1, 'method': 'initialize', 'params': {'clientInfo': {'name':'ai_usage_monitor','title':'AI Usage Monitor','version':'0.9.0'}}})
+        s.send({'id': 1, 'method': 'initialize', 'params': {'clientInfo': {'name':'ai_usage_monitor','title':'AI Usage Monitor','version':'0.10.0'}}})
         m = s.wait(lambda m: m.get('id') == 1 and ('result' in m or 'error' in m), 20)
         if 'error' in m: raise QueryError('Codex 초기화 실패 (CLI 업데이트 확인)')
         s.send({'method':'initialized'})
@@ -146,6 +146,8 @@ def collect(config):
             provider = futures[future]
             try:
                 fresh = future.result()
+                # Replace the entire record on success, even if remaining is unchanged.
+                # A null reset_at is authoritative; never carry over the previous deadline.
                 for key in KEYS[provider]: result['rows'][key] = fresh.get(key)
             except Exception as e:
                 result['errors'][provider] = str(e) if isinstance(e, QueryError) else f'{type(e).__name__}: CLI 실행/응답 오류'

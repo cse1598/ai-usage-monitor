@@ -3,19 +3,20 @@
 > [!NOTE]
 > **한국어 사용자이신가요? [한국어 설치 및 사용 안내 바로가기 →](README.ko.md)**
 
-> GNOME Shell 46 · Ubuntu 24.04 LTS · v0.9
+> GNOME Shell 46 · Ubuntu 24.04 LTS · v0.10
 
 An independent, unofficial open-source project. Not affiliated with OpenAI or Anthropic.
 
 A lightweight GNOME Shell top-panel extension for Ubuntu 24.04. Monitor Codex and Claude Code subscription quotas (5-hour and weekly) and their reset countdowns. No separate login, API key or external Python packages are required.
 
-## What's new in v0.9
+## What's new in v0.10
 
 - Compact flat popup with a single rounded outer border and one separator below each detected AI provider.
 - Refresh, language and theme controls are now icon-only buttons in the header.
 - English and Korean UI, including errors, quota labels, countdowns, and theme controls.
 - One-click theme and language toggles; matching the system automatically restores synchronization.
 - Full-color header icons, consistent weekly labels, and no manual refresh cooldown.
+- Every manual or automatic query refreshes reset timestamps as well as usage; the countdowns show a loading message until the response arrives.
 - System language is the default: Korean on Korean desktops, English on English desktops, and English for every other language.
 - English is the main README, with the original Korean guide available through the link above.
 - Existing features remain unchanged: optional CLI detection, automatic refresh every minute, and light/dark/system themes.
@@ -148,7 +149,7 @@ Click the **theme icon** in the top-right corner to toggle Light ↔ Dark. The f
 
 Click the **language icon** to toggle English ↔ 한국어. The same automatic synchronization rule applies to the effective GNOME session language (Korean for Korean locales, English otherwise). The widget changes immediately on a click; a GNOME session language change normally requires logging out and back in. Saved preferences are reconciled with the current session at startup and whenever the popup opens. The mode is stored in `~/.config/ai-usage-monitor/language` (respecting XDG_CONFIG_HOME).
 
-Usage queries are attempted every 60 seconds, without overlapping a previous query. There is no widget-imposed manual refresh cooldown; only simultaneous requests are blocked. Upstream CLI/server rate limits still apply. Cached data and error messages are displayed when a server request fails.
+Usage queries are attempted every 60 seconds, without overlapping a previous query. There is no widget-imposed manual refresh cooldown; only simultaneous requests are blocked. Upstream CLI/server rate limits still apply. Each query requests both usage and reset timestamps; after a successful response, countdowns are recalculated from the returned deadlines even when percentages have not changed. Refreshing does not reset the actual subscription window. Cached data and error messages are displayed when a server request fails.
 
 ## UI demo mode
 
@@ -231,7 +232,7 @@ node --input-type=module --check < i18n.js
 node --input-type=module --check < preferences.js
 ```
 
-The 10 original collector tests and 6 environment tests are included alongside the localization tests. See [GitHub Actions](../../actions) for CI results. Actual GNOME rendering and live account integration require separate verification.
+The 11 collector tests and 6 environment tests are included alongside the localization tests. See [GitHub Actions](../../actions) for CI results. Actual GNOME rendering and live account integration require separate verification.
 
 ## License and trademarks
 

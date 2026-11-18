@@ -6,7 +6,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
-import {LANGUAGES, LANGUAGE_MODES, defaultLanguage, translate, translateError, countdown} from './i18n.js';
+import {LANGUAGES, LANGUAGE_MODES, defaultLanguage, translate, translateError, resetLabel} from './i18n.js';
 
 import {syncMode, toggleMode} from './preferences.js';
 
@@ -182,6 +182,7 @@ export default class UsageMonitor extends Extension {
             const proc=Gio.Subprocess.new(['/usr/bin/python3',`${this.path}/collector.py`],Gio.SubprocessFlags.STDOUT_PIPE|Gio.SubprocessFlags.STDERR_PIPE);
             this._process=proc;
             this._refreshButton.reactive=false;
+            this._render();
             proc.communicate_utf8_async(null,null,(p,res)=>{
                 try {
                     const [,output]=p.communicate_utf8_finish(res);
@@ -194,7 +195,11 @@ export default class UsageMonitor extends Extension {
                     if (this._active && this._process===p) {this._process=null;this._refreshButton.reactive=true;this._render();}
                 }
             });
-        } catch(e) {this._process=null;this._refreshButton.reactive=true;this._failed=true;this._render();}
+        } catch(e) {
+            this._process=null;this._refreshButton.reactive=true;this._failed=true;
+            for(const row of Object.values(this._data.rows||{})) if(row) row.stale=true;
+            this._render();
+        }
     }
     _render() {
         if (!this._active) return;
@@ -215,7 +220,7 @@ export default class UsageMonitor extends Extension {
             ui.pct.set_style(`color: ${ok&&!past?color(row.remaining,this._dark):(this._dark?'#aaaaaa':'#666666')};`);
             ui.fill.width=ok&&!past?Math.round(WIDTH*row.remaining/100):0;
             ui.fill.set_style(`background-color: ${ok?color(row.remaining,this._dark):'transparent'}; border-radius: 4px;`);
-            ui.timer.text=ok?`${row.stale?this._tr('stale'):''}${!Number.isFinite(row.reset_at) && row.active === false ? this._tr('inactive') : countdown(row.reset_at,this._language)}`:this._tr('noData');
+            ui.timer.text=resetLabel(row,this._language,Boolean(this._process));
         }
         for (const provider of ['codex','claude']) {
             const e=this[`_error_${provider}`]; const msg=data.errors?.[provider];

@@ -32,6 +32,34 @@ class Tests(unittest.TestCase):
                 first=c.collect({});self.assertEqual(first['rows']['codex_5h']['remaining'],42); self.assertIsNone(first['rows']['claude_5h'])
             with patch.object(c,'CACHE',path),patch.object(c,'find_cli',side_effect=lambda name,config:'/fake/'+name),patch.object(c,'query_codex',side_effect=c.QueryError('offline')),patch.object(c,'query_claude',side_effect=c.QueryError('offline')):
                 self.assertTrue(c.collect({})['rows']['codex_5h']['stale'])
+    def test_reset_times_replaced_on_each_successful_query(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = pathlib.Path(d) / 'cache.json'
+            def codex(reset):
+                return c.parse_codex({'rateLimits': {
+                    'primary': {'windowDurationMins': 300, 'usedPercent': 0, 'resetsAt': reset},
+                    'secondary': {'windowDurationMins': 10080, 'usedPercent': 50, 'resetsAt': reset + 10000}}})
+            def claude(reset):
+                return c.parse_claude({'rate_limits': {'limits': [
+                    {'kind': 'session', 'percent': 0, 'resets_at': reset, 'is_active': reset is not None},
+                    {'kind': 'weekly_all', 'percent': 50, 'resets_at': '2030-01-02T00:00:00Z'}]}})
+            with patch.object(c, 'CACHE', path), patch.object(c, 'find_cli', side_effect=lambda name, config: '/fake/' + name), patch.object(c, 'query_codex', side_effect=[codex(2000000000), codex(2000003600), c.QueryError('offline')]) as cq, patch.object(c, 'query_claude', side_effect=[claude('2030-01-01T00:00:00Z'), claude(None), c.QueryError('offline')]) as aq:
+                first = c.collect({})
+                second = c.collect({})
+                self.assertEqual(first['rows']['codex_5h']['remaining'], second['rows']['codex_5h']['remaining'])
+                self.assertEqual(second['rows']['codex_5h']['reset_at'], 2000003600)
+                self.assertEqual(second['rows']['codex_week']['reset_at'], 2000013600)
+                self.assertEqual(second['rows']['claude_5h']['remaining'], 100)
+                self.assertIsNone(second['rows']['claude_5h']['reset_at'])
+                self.assertFalse(second['rows']['claude_5h']['active'])
+                self.assertEqual(json.loads(path.read_text()), second)
+                failed = c.collect({})
+                self.assertEqual(failed['rows']['codex_5h']['reset_at'], 2000003600)
+                self.assertTrue(failed['rows']['codex_5h']['stale'])
+                self.assertTrue(failed['rows']['claude_5h']['stale'])
+                self.assertEqual(cq.call_count, 3)
+                self.assertEqual(aq.call_count, 3)
+
     def check_detection(self, installed):
         with tempfile.TemporaryDirectory() as d:
             path=pathlib.Path(d)/'cache.json'

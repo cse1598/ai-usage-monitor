@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 
 // Import the GJS module as an ES module without changing Node's package type.
 const source = readFileSync(new URL('./i18n.js', import.meta.url), 'utf8');
-const {defaultLanguage, resolveLanguage, LANGUAGE_MODES, translate, translateError, countdown} =
+const {defaultLanguage, resolveLanguage, LANGUAGE_MODES, translate, translateError, countdown, resetLabel} =
     await import('data:text/javascript;base64,' + Buffer.from(source).toString('base64'));
 
 test('locale default', () => {
@@ -29,7 +29,7 @@ test('system mode and saved manual preferences', () => {
     assert.equal(resolveLanguage('invalid','ja_JP'),'en');
 });
 test('all interface keys have both translations', () => {
-    for (const key of ['fiveHour','weekly','weeklyAll','remaining','refresh','theme','auto','dark','light','language','querying','noAi','installCli','noCli','noReset','expired','inactive','stale','noData','failed','demo','updated','interval','day','genericError']) {
+    for (const key of ['fiveHour','weekly','weeklyAll','remaining','refresh','theme','auto','dark','light','language','querying','resetQuerying','noAi','installCli','noCli','noReset','expired','inactive','stale','noData','failed','demo','updated','interval','day','genericError']) {
         assert.notEqual(translate('en',key),key);
         assert.notEqual(translate('ko',key),key);
     }
@@ -51,4 +51,17 @@ test('backend error messages', () => {
     const collector=readFileSync(new URL('./collector.py', import.meta.url),'utf8');
     for(const match of collector.matchAll(/raise QueryError\('([^']+)'\)/g))
         assert.notEqual(translateError('en',match[1]),'CLI execution/response error',match[1]);
+});
+
+test('reset labels refresh even when usage is unchanged', () => {
+    const old={remaining:100,reset_at:3600};
+    const fresh={remaining:100,reset_at:7200};
+    assert.equal(resetLabel(old,'ko',true,0),'초기화 시간 조회 중…');
+    assert.equal(resetLabel(old,'en',true,0),'Checking reset time…');
+    assert.equal(resetLabel(old,'en',false,0),'01:00:00');
+    assert.equal(resetLabel(fresh,'en',false,0),'02:00:00');
+    assert.equal(resetLabel({remaining:100,reset_at:null,active:false},'ko',false,0),'타이머 미시작');
+    assert.equal(resetLabel({remaining:100,reset_at:null},'en',false,0),'Reset time unavailable');
+    assert.equal(resetLabel({...old,stale:true},'en',false,0),'Cached · 01:00:00');
+    assert.equal(resetLabel(null,'en',false,0),'Quota unavailable');
 });
